@@ -1,0 +1,16 @@
+question,option_a,option_b,option_c,option_d,correct_answer,explanation,difficulty,marks,negative_marks
+"Solve: 2x + 5 = 15","x = 5","x = 10","x = 15","x = 20","A","2x = 15 - 5 = 10, therefore x = 5","easy",1,0.25
+"What is the value of sin 30°?","1","0.5","0.866","0.707","B","sin 30° = 1/2 = 0.5","easy",1,0.25
+"Find the area of a triangle with base 10 and height 6","30","60","15","20","A","Area = (1/2) × base × height = (1/2) × 10 × 6 = 30","easy",1,0.25
+"What is the cube root of 27?","3","9","27","81","A","∛27 = 3 because 3³ = 27","easy",1,0.25
+"If x² = 16, what are the values of x?","±4","±2","4 only","-4 only","A","x = √16 = ±4","easy",1,0.25
+"What is the HCF of 12 and 18?","2","3","6","9","C","Factors of 12: 1,2,3,4,6,12. Factors of 18: 1,2,3,6,9,18. HCF = 6","easy",1,0.25
+"Simplify: (a + b)² - (a - b)²","4ab","2ab","2a²","2b²","A","(a+b)² - (a-b)² = a²+2ab+b² - (a²-2ab+b²) = 4ab","medium",2,0.5
+"What is the value of cos 60°?","1","0.5","0.866","0.707","B","cos 60° = 1/2 = 0.5","easy",1,0.25
+"Find the LCM of 4 and 6","12","24","2","8","A","Multiples of 4: 4,8,12,16. Multiples of 6: 6,12,18. LCM = 12","easy",1,0.25
+"What is the perimeter of a square with side 7?","14","21","28","49","C","Perimeter = 4 × side = 4 × 7 = 28","easy",1,0.25
+"Solve: 3(x - 2) = 12","x = 6","x = 4","x = 8","x = 2","A","3x - 6 = 12, 3x = 18, x = 6","easy",1,0.25
+"What is 25% of 80?","15","20","25","30","B","25% of 80 = (25/100) × 80 = 20","easy",1,0.25
+"If the radius of a circle is doubled, by what factor does the area increase?","2","4","8","16","B","Original area = πr², New area = π(2r)² = 4πr². Factor = 4","medium",2,0.5
+"What is the sum of angles in a triangle?","90°","180°","270°","360°","B","Sum of angles in any triangle = 180°","easy",1,0.25
+"Find the value of x if 5ˣ = 125","2","3","4","5","B","5ˣ = 125 = 5³, therefore x = 3","easy",1,0.25

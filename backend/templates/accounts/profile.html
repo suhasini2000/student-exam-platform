@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - {{ user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">My Profile</h2>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div>
+            <h3>Personal Information</h3>
+            <p><strong>Username:</strong> {{ user.username }}</p>
+            <p><strong>Name:</strong> {{ user.get_full_name }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Phone:</strong> {{ user.phone_number }}</p>
+            <p><strong>Date of Birth:</strong> {{ user.date_of_birth|date:"d M, Y" }}</p>
+            <p><strong>Address:</strong> {{ user.address }}</p>
+        </div>
+        
+        <div>
+            <h3>Identification</h3>
+            <p><strong>ID Type:</strong> {{ user.get_proof_id_type_display }}</p>
+            <p><strong>ID Number:</strong> {{ user.proof_id_number }}</p>
+            {% if user.proof_id_document %}
+            <p><strong>Document:</strong> <a href="{{ user.proof_id_document.url }}" target="_blank">View Document</a></p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'exams:dashboard' %}" class="btn">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

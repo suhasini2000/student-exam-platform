@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Competitive Exam Platform{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 style="color: #2c3e50; margin-bottom: 1.5rem;">Welcome, {{ user.get_full_name }}!</h2>
+    
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'exams:select_exam_type' %}" class="btn btn-success" style="font-size: 1.1rem;">Start New Exam</a>
+        <a href="{% url 'exams:exam_history' %}" class="btn" style="font-size: 1.1rem;">View History</a>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="color: #2c3e50; margin-bottom: 1rem;">Available Exams</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for exam_type in exam_types %}
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h4 style="margin-bottom: 0.5rem;">{{ exam_type.name }}</h4>
+            <p style="margin-bottom: 1rem; opacity: 0.9;">{{ exam_type.description|default:"Click to view subjects" }}</p>
+            <a href="{% url 'exams:select_subject' exam_type.id %}" class="btn" style="background: white; color: #667eea;">View Subjects</a>
+        </div>
+        {% empty %}
+        <p>No exams available at the moment.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% if user_exams %}
+<div class="card">
+    <h3 style="color: #2c3e50; margin-bottom: 1rem;">Recent Exams</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Exam Type</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exam in user_exams|slice:":5" %}
+            <tr>
+                <td>{{ exam.subject.exam_type.name }}</td>
+                <td>{{ exam.subject.name }}</td>
+                <td>
+                    {% if exam.status == 'COMPLETED' %}
+                        <span style="color: green;">✓ Completed</span>
+                    {% elif exam.status == 'IN_PROGRESS' %}
+                        <span style="color: orange;">⚠ In Progress</span>
+                    {% else %}
+                        <span style="color: gray;">Not Started</span>
+                    {% endif %}
+                </td>
+                <td>{{ exam.score|floatformat:2 }}/{{ exam.subject.total_marks }}</td>
+                <td>{{ exam.percentage|floatformat:2 }}%</td>
+                <td>{{ exam.created_at|date:"d M, Y H:i" }}</td>
+                <td>
+                    {% if exam.status == 'COMPLETED' %}
+                        <a href="{% url 'exams:exam_result' exam.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">View Result</a>
+                    {% elif exam.status == 'IN_PROGRESS' %}
+                        <a href="{% url 'exams:take_exam' exam.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Continue</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

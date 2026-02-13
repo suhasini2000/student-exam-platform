@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Exam History{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 style="color: #2c3e50; margin-bottom: 1.5rem;">Exam History</h2>
+    
+    {% if user_exams %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Exam Type</th>
+                <th>Subject</th>
+                <th>Score</th>
+                <th>Percentage</th>
+                <th>Correct/Total</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exam in user_exams %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ exam.subject.exam_type.name }}</td>
+                <td>{{ exam.subject.name }}</td>
+                <td><strong>{{ exam.score|floatformat:2 }}/{{ exam.subject.total_marks }}</strong></td>
+                <td>
+                    {% if exam.percentage >= 75 %}
+                        <span style="color: #27ae60;"><strong>{{ exam.percentage|floatformat:2 }}%</strong></span>
+                    {% elif exam.percentage >= 50 %}
+                        <span style="color: #f39c12;"><strong>{{ exam.percentage|floatformat:2 }}%</strong></span>
+                    {% else %}
+                        <span style="color: #e74c3c;"><strong>{{ exam.percentage|floatformat:2 }}%</strong></span>
+                    {% endif %}
+                </td>
+                <td>{{ exam.correct_answers }}/{{ exam.total_questions }}</td>
+                <td>{{ exam.completed_at|date:"d M, Y H:i" }}</td>
+                <td>
+                    <a href="{% url 'exams:exam_result' exam.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">View Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; color: #7f8c8d; padding: 2rem;">
+        No exam history found. <a href="{% url 'exams:select_exam_type' %}">Start your first exam</a>
+    </p>
+    {% endif %}
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'exams:dashboard' %}" class="btn">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

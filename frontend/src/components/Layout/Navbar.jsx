@@ -68,7 +68,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <Link to={user ? getDashboardPath() : '/'} className="text-xl font-bold tracking-tight">
-            {user ? (user.school_name || user.school_account_name || 'ExamPrep') : 'ExamPrep'}
+            {user ? (user.school_name || user.school_account_name || 'Student Management and Exam Platform') : 'Student Management and Exam Platform'}
             {roleLabel && <span className="ml-2 text-xs bg-indigo-500 px-2 py-0.5 rounded-full">{roleLabel}</span>}
           </Link>
 

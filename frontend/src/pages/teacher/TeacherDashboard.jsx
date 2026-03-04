@@ -179,10 +179,10 @@ export default function TeacherDashboard() {
             {user?.profile_photo ? (
               <img
                 src={user.profile_photo} alt="Profile"
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white/20 shrink-0 shadow-lg"
+                className="w-20 h-20 rounded-full object-cover ring-4 ring-white/20 shrink-0 shadow-lg"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-500
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500
                               flex items-center justify-center text-3xl font-bold text-white
                               ring-4 ring-white/20 shrink-0 shadow-lg">
                 {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}

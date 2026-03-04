@@ -71,6 +71,14 @@ export default function App() {
             <Route path="/school/subjects" element={<RoleProtectedRoute allowedRoles={['school']}><ManageSubjects /></RoleProtectedRoute>} />
             <Route path="/school/images" element={<RoleProtectedRoute allowedRoles={['school']}><ManageImages /></RoleProtectedRoute>} />
 
+            {/* Coaching Centre Routes (same components, /coaching/ prefix) */}
+            <Route path="/coaching/dashboard" element={<RoleProtectedRoute allowedRoles={['school']}><SchoolDashboard /></RoleProtectedRoute>} />
+            <Route path="/coaching/teachers" element={<RoleProtectedRoute allowedRoles={['school']}><ManageTeachers /></RoleProtectedRoute>} />
+            <Route path="/coaching/students" element={<RoleProtectedRoute allowedRoles={['school']}><ManageStudents /></RoleProtectedRoute>} />
+            <Route path="/coaching/assignments" element={<RoleProtectedRoute allowedRoles={['school']}><ManageAssignments /></RoleProtectedRoute>} />
+            <Route path="/coaching/subjects" element={<RoleProtectedRoute allowedRoles={['school']}><ManageSubjects /></RoleProtectedRoute>} />
+            <Route path="/coaching/progress-card" element={<RoleProtectedRoute allowedRoles={['school']}><StudentProgressCard /></RoleProtectedRoute>} />
+
             {/* Teacher Routes (also accessible by school/org admins) */}
             <Route path="/teacher/dashboard" element={<RoleProtectedRoute allowedRoles={['teacher']}><TeacherDashboard /></RoleProtectedRoute>} />
             <Route path="/teacher/upload-paper" element={<RoleProtectedRoute allowedRoles={['teacher', 'school']}><UploadPaper /></RoleProtectedRoute>} />

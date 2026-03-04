@@ -125,7 +125,7 @@ function UserMenu({ user, onLogout }) {
         )}
         <div className="hidden lg:block text-left">
           <p className="text-sm font-medium text-white leading-tight">{user?.first_name || user?.username}</p>
-          <p className="text-xs text-gray-400 leading-tight capitalize">{user?.role}</p>
+          <p className="text-xs text-gray-400 leading-tight capitalize">{getRoleLabel()}</p>
         </div>
         <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -220,6 +220,26 @@ export default function Navbar() {
     </>
   );
 
+  const coachingNav = (
+    <>
+      <NavLink to="/coaching/dashboard" label="Dashboard" icon="dashboard" />
+      <Dropdown label="Manage" icon="manage" items={[
+        { to: '/coaching/teachers', label: 'Teachers', icon: 'manage' },
+        { to: '/coaching/students', label: 'Students', icon: 'manage' },
+        { to: '/coaching/assignments', label: 'Assignments', icon: 'exams' },
+        { to: '/coaching/subjects', label: 'Subjects', icon: 'subjects' },
+      ]} />
+      <Dropdown label="Exams" icon="exams" items={[
+        { to: '/teacher/create-exam', label: 'Create Exam', icon: 'exams' },
+        { to: '/teacher/created-exams', label: 'Created Exams', icon: 'papers' },
+        { to: '/teacher/grading', label: 'Grading Queue', icon: 'history' },
+        { to: '/teacher/generate-paper', label: 'Generate Questions', icon: 'generate' },
+        { to: '/teacher/papers/view', label: 'View Papers', icon: 'papers' },
+      ]} />
+      <NavLink to="/coaching/progress-card" label="Progress Card" icon="progress" />
+    </>
+  );
+
   const studentNav = (
     <>
       <NavLink to="/dashboard" label="Dashboard" icon="dashboard" />
@@ -236,7 +256,10 @@ export default function Navbar() {
   const renderDesktopNav = () => {
     if (!user) return null;
     if (user.role === 'teacher') return teacherNav;
-    if (user.role === 'school') return schoolNav;
+    if (user.role === 'school') {
+      if (user.org_type === 'coaching') return coachingNav;
+      return schoolNav;
+    }
     return studentNav;
   };
 
@@ -255,19 +278,22 @@ export default function Navbar() {
       { to: '/teacher/progress-card', label: 'Progress Card', icon: 'progress' },
       { to: '/profile', label: 'Profile', icon: 'profile' },
     ];
-    if (user.role === 'school') return [
-      { to: '/school/dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { to: '/school/teachers', label: 'Teachers', icon: 'manage' },
-      { to: '/school/students', label: 'Students', icon: 'manage' },
-      { to: '/school/assignments', label: 'Assignments', icon: 'exams' },
-      { to: '/school/subjects', label: 'Subjects', icon: 'subjects' },
-      { to: '/teacher/create-exam', label: 'Create Exam', icon: 'exams' },
-      { to: '/teacher/created-exams', label: 'Created Exams', icon: 'papers' },
-      { to: '/teacher/grading', label: 'Grading Queue', icon: 'history' },
-      { to: '/teacher/papers/view', label: 'View Papers', icon: 'papers' },
-      { to: '/school/progress-card', label: 'Progress Card', icon: 'progress' },
-      { to: '/profile', label: 'Profile', icon: 'profile' },
-    ];
+    if (user.role === 'school') {
+      const prefix = user.org_type === 'coaching' ? '/coaching' : '/school';
+      return [
+        { to: `${prefix}/dashboard`, label: 'Dashboard', icon: 'dashboard' },
+        { to: `${prefix}/teachers`, label: 'Teachers', icon: 'manage' },
+        { to: `${prefix}/students`, label: 'Students', icon: 'manage' },
+        { to: `${prefix}/assignments`, label: 'Assignments', icon: 'exams' },
+        { to: `${prefix}/subjects`, label: 'Subjects', icon: 'subjects' },
+        { to: '/teacher/create-exam', label: 'Create Exam', icon: 'exams' },
+        { to: '/teacher/created-exams', label: 'Created Exams', icon: 'papers' },
+        { to: '/teacher/grading', label: 'Grading Queue', icon: 'history' },
+        { to: '/teacher/papers/view', label: 'View Papers', icon: 'papers' },
+        { to: `${prefix}/progress-card`, label: 'Progress Card', icon: 'progress' },
+        { to: '/profile', label: 'Profile', icon: 'profile' },
+      ];
+    }
     return [
       { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
       { to: '/subjects', label: 'Subjects', icon: 'subjects' },

@@ -87,7 +87,8 @@ export default function Login() {
     setLoading(true);
     try {
       const profile = await login(username, password);
-      const path = profile.role === 'school' ? '/school/dashboard'
+      const path = profile.role === 'school'
+        ? (profile.org_type === 'coaching' ? '/coaching/dashboard' : '/school/dashboard')
         : profile.role === 'teacher' ? '/teacher/dashboard'
         : '/dashboard';
       navigate(path);

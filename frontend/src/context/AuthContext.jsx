@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
   const getDashboardPath = () => {
     if (!user) return '/login';
     switch (user.role) {
-      case 'school': return '/school/dashboard';
+      case 'school': return user.org_type === 'coaching' ? '/coaching/dashboard' : '/school/dashboard';
       case 'teacher': return '/teacher/dashboard';
       default: return '/dashboard';
     }

@@ -1,7 +1,9 @@
 [build]
 builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt && python manage.py collectstatic --no-input"
 
 [deploy]
+preDeployCommand = "python manage.py migrate"
 startCommand = "gunicorn exam_platform.wsgi --log-file -"
 healthcheckPath = "/admin/"
 restartPolicyType = "on_failure"

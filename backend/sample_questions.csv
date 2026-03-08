@@ -1,6 +1,0 @@
-question,option_a,option_b,option_c,option_d,correct_answer,explanation,difficulty,marks,negative_marks
-"What is the speed of light in vacuum?","299,792,458 m/s","300,000,000 m/s","250,000,000 m/s","350,000,000 m/s","A","Speed of light is approximately 299,792,458 meters per second","medium",2,0.5
-"What is the atomic number of Carbon?","4","6","8","12","B","Carbon has 6 protons, so its atomic number is 6","easy",1,0.25
-"Who developed the theory of relativity?","Isaac Newton","Albert Einstein","Stephen Hawking","Niels Bohr","B","Albert Einstein developed the theory of relativity","medium",2,0.5
-"What is the square root of 144?","10","11","12","13","C","Square root of 144 is 12","easy",1,0.25
-"What is the boiling point of water at sea level?","90°C","95°C","100°C","105°C","C","Water boils at 100°C at sea level","easy",1,0.25

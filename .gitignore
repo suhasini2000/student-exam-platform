@@ -20,8 +20,11 @@ frontend/dist/
 .DS_Store
 *.swp
 
-# Test/sample files in project root
+# Test/sample files & backups
 *.pdf
 *.jpg
 *.jpeg
 *.png
+*.bak
+backend/*.csv
+backend/*.json

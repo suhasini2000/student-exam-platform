@@ -134,9 +134,6 @@ urlpatterns = [
     # Study materials
     path('api/study-materials/', include('study_material.urls')),
 
-    # Legacy template-based views
-    path('accounts/', include('accounts.urls')),
-    path('', include('exams.urls')),
 ]
 
 if settings.DEBUG:

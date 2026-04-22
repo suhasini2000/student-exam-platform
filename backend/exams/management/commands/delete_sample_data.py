@@ -1,31 +1,36 @@
 """
-Management command to delete all global sample data (subjects, chapters, questions)
+Safe cleanup command to remove global sample data.
 """
 from django.core.management.base import BaseCommand
-from exams.models import Question, Chapter, Subject
+from exams.models import Question, Chapter, Subject, UserExam, UserAnswer, ExamAnalysis
 
 class Command(BaseCommand):
-    help = 'Deletes all global subjects, chapters, and questions while keeping school-specific data'
+    help = 'Safely deletes global sample data while preserving school data'
 
     def handle(self, *args, **options):
-        self.stdout.write("Starting cleanup of global sample data...")
+        self.stdout.write("Starting safe cleanup...")
         
-        # 1. Delete Global Questions
-        global_questions = Question.objects.filter(school__isnull=True)
-        q_count = global_questions.count()
-        global_questions.delete()
+        # Identify global subjects (no school)
+        global_subjects = Subject.objects.filter(school__isnull=True)
+        global_sub_ids = list(global_subjects.values_list('id', flat=True))
+        
+        # 1. Delete dependent data first to avoid Foreign Key errors
+        # (Only for questions that are linked to global subjects)
+        ua_count = UserAnswer.objects.filter(question__subject_id__in=global_sub_ids).delete()[0]
+        self.stdout.write(f"Deleted {ua_count} user answers linked to global subjects.")
+        
+        # 2. Delete Global Questions
+        q_count = Question.objects.filter(subject_id__in=global_sub_ids).delete()[0]
         self.stdout.write(f"Deleted {q_count} global questions.")
         
-        # 2. Delete Global Chapters
-        # (Since chapters are linked to subjects, we'll delete global subjects next which will cascade)
+        # 3. Delete Global Chapters
+        c_count = Chapter.objects.filter(subject_id__in=global_sub_ids).delete()[0]
+        self.stdout.write(f"Deleted {c_count} global chapters.")
         
-        # 3. Delete Global Subjects
-        # Usually these are the ones created by the script (id=1, 2, 3 etc) or any without a school
-        global_subjects = Subject.objects.filter(school__isnull=True)
+        # 4. Finally Delete Global Subjects
         s_count = global_subjects.count()
-        
         sub_names = list(global_subjects.values_list('name', flat=True))
         global_subjects.delete()
         self.stdout.write(f"Deleted {s_count} global subjects: {', '.join(sub_names)}")
         
-        self.stdout.write(self.style.SUCCESS("✅ Cleanup complete. Only your school's data remains."))
+        self.stdout.write(self.style.SUCCESS("✅ Safe cleanup complete."))

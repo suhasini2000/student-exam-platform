@@ -39,7 +39,6 @@ from exams.api_views import (
     PendingReviewListView,
     TeacherQuestionListView,
     ProgressCardView,
-    check_ai_settings,
 )
 
 urlpatterns = [
@@ -131,9 +130,6 @@ urlpatterns = [
     path('api/site-images/', site_images_view, name='api-site-images'),
     path('api/site-images/upload/', site_image_upload_view, name='api-site-image-upload'),
     path('api/site-images/<int:pk>/', site_image_delete_view, name='api-site-image-delete'),
-
-    # Diagnostic
-    path('api/check-ai/', check_ai_settings, name='api-check-ai'),
 ]
 
 if settings.DEBUG:

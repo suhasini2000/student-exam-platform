@@ -35,50 +35,6 @@ from accounts.permissions import IsSchoolOrTeacher, IsTeacherUser, IsSchoolUser
 User = get_user_model()
 
 
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def check_ai_settings(request):
-    """Master Diagnostic Tool to map the database state."""
-    import google.generativeai as genai
-    user = request.user
-    
-    # 1. User/School Map
-    user_info = {
-        "is_logged_in": user.is_authenticated,
-        "username": user.username if user.is_authenticated else "None",
-        "role": getattr(user, 'role', 'None'),
-        "user_id": user.id if user.is_authenticated else "None",
-    }
-    
-    school_obj = None
-    if user.is_authenticated:
-        school_obj = user if user.role == 'school' else getattr(user, 'school', None)
-    
-    user_info["school_id_detected"] = school_obj.id if school_obj else "None"
-
-    # 2. Question Map
-    from .models import Question, Subject
-    all_questions = Question.objects.all()
-    q_by_school = {}
-    for q in all_questions:
-        sid = str(q.school_id)
-        q_by_school[sid] = q_by_school.get(sid, 0) + 1
-        
-    q_by_subject = {}
-    for q in all_questions:
-        sub_name = q.subject.name if q.subject else "No Subject"
-        q_by_subject[sub_name] = q_by_subject.get(sub_name, 0) + 1
-
-    return Response({
-        "diagnostic_version": "6.0-MASTER",
-        "user_context": user_info,
-        "questions_count_by_school_id": q_by_school,
-        "questions_count_by_subject_name": q_by_subject,
-        "total_questions_in_system": all_questions.count(),
-        "timestamp": timezone.now()
-    })
-
-
 # ============================================================
 # Existing views (updated with school-aware filtering)
 # ============================================================

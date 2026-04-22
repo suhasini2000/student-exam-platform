@@ -55,6 +55,7 @@ def generate_questions_from_paper(exam_paper_id):
             Question.objects.create(
                 subject=exam_paper.subject,
                 school=exam_paper.school, # LINK TO YOUR SCHOOL
+                created_by=exam_paper.uploaded_by,
                 question_type=str(q.get('question_type', 'MCQ')).upper(),
                 question_text=q.get('question_text', 'Sample Question'),
                 option_a=q.get('option_a', 'Option A'),

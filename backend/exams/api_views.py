@@ -109,9 +109,9 @@ class SubjectListView(generics.ListAPIView):
             chapter_count=Count('chapters'),
             question_count=Count('questions'),
         )
-        # Filter to this school's own subjects only
+        # Show school's own subjects AND global ones (to allow matching)
         if school:
-            qs = qs.filter(school=school)
+            qs = qs.filter(Q(school=school) | Q(school__isnull=True))
         exam_type = self.request.query_params.get('exam_type')
         if exam_type:
             qs = qs.filter(exam_type_id=exam_type)
@@ -693,7 +693,7 @@ class TeacherQuestionListView(generics.ListAPIView):
             Q(subject_id=subject_id) | Q(subject__name=subject_name),
             is_active=True,
         ).filter(
-            Q(school=school) | Q(school__isnull=True)
+            Q(school=school) | Q(school__isnull=True) | Q(created_by=user)
         ).select_related('chapter')
 
         chapter = self.request.query_params.get('chapter')

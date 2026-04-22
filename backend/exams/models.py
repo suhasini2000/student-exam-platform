@@ -99,6 +99,10 @@ class Question(models.Model):
         on_delete=models.SET_NULL, related_name='school_questions',
         help_text='School that owns this question (null = global)',
     )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='created_questions'
+    )
     question_type = models.CharField(max_length=5, choices=QUESTION_TYPE_CHOICES, default='MCQ')
     question_text = models.TextField()
     # MCQ options (nullable for SHORT/LONG)

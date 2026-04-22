@@ -17,6 +17,9 @@ export function AuthProvider({ children }) {
         userData.profile_photo = baseUrl.endsWith('/') 
           ? `${baseUrl}${userData.profile_photo.startsWith('/') ? userData.profile_photo.slice(1) : userData.profile_photo}`
           : `${baseUrl}${userData.profile_photo.startsWith('/') ? userData.profile_photo : '/' + userData.profile_photo}`;
+        
+        // Add cache buster
+        userData.profile_photo += `?t=${Date.now()}`;
       }
       setUser(userData);
     } catch {

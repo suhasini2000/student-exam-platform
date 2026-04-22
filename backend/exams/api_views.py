@@ -64,14 +64,23 @@ def check_ai_settings(request):
     except Exception as e:
         error = str(e)
 
+    # Count questions for this user/school
+    user = request.user
+    q_count = 0
+    total_q = Question.objects.all().count()
+    
+    if user.is_authenticated:
+        school = user if user.role == 'school' else getattr(user, 'school', None)
+        if school:
+            q_count = Question.objects.filter(school=school).count()
+
     return Response({
-        'diagnostic_version': '4.0-DETAILED',
+        'diagnostic_version': '5.0-FINAL',
         'library': 'google-generativeai',
-        'library_version': library_version,
         'model_configured': 'models/gemini-2.0-flash',
-        'available_models_count': len(available_models),
+        'questions_in_your_school': q_count,
+        'total_questions_in_db': total_q,
         'available_models_list': available_models,
-        'error_log': error,
         'timestamp': timezone.now()
     })
 

@@ -62,7 +62,7 @@ def process_handwritten_exam(handwritten_exam_id, include_analysis=False):
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
 
         # Encode both files
         qp_data, qp_mime = _encode_file(exam.question_paper)

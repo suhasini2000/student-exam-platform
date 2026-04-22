@@ -64,7 +64,7 @@ def generate_questions_from_paper(exam_paper_id):
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
 
         prompt_text = f"""You are a question paper generator for 10th standard students.
 
@@ -230,7 +230,7 @@ def generate_paper_from_multiple(paper_ids, instructions, subject, school, teach
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
 
         prompt_text = f"""You are an expert question paper creator for 10th standard students.
 
@@ -388,7 +388,7 @@ def generate_questions_from_instructions(subject, chapters, topics, marks_distri
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
 
         prompt = f"""You are an expert question paper creator for 10th standard students.
 

@@ -37,32 +37,40 @@ User = get_user_model()
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def check_ai_settings(request):
-    """Diagnostic endpoint to check current AI configuration and available models."""
+    """Extremely detailed diagnostic to force server update verification."""
     import google.generativeai as genai
     api_key = settings.GEMINI_API_KEY
     
     available_models = []
     error = None
+    library_version = "Unknown"
+    try:
+        import pkg_resources
+        library_version = pkg_resources.get_distribution("google-generativeai").version
+    except:
+        pass
+
     try:
         if api_key:
             genai.configure(api_key=api_key)
             for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    available_models.append({
-                        'name': m.name,
-                        'display_name': m.display_name,
-                    })
+                available_models.append({
+                    'name': m.name,
+                    'methods': m.supported_generation_methods
+                })
         else:
-            error = "API Key not found in settings"
+            error = "API Key missing in environment"
     except Exception as e:
         error = str(e)
 
     return Response({
-        'model_to_be_used': 'gemini-1.5-flash',
-        'api_key_configured': bool(api_key),
-        'available_models': available_models,
-        'backend_status': 'Updated to Stable Library',
-        'error': error,
+        'diagnostic_version': '4.0-DETAILED',
+        'library': 'google-generativeai',
+        'library_version': library_version,
+        'model_configured': 'models/gemini-1.5-flash',
+        'available_models_count': len(available_models),
+        'available_models_list': available_models,
+        'error_log': error,
         'timestamp': timezone.now()
     })
 

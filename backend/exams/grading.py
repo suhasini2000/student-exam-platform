@@ -43,7 +43,7 @@ def grade_descriptive_with_ai(user_answer):
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
 
         max_marks = question.marks
         prompt = f"""You are grading a student's answer for a 10th standard exam.

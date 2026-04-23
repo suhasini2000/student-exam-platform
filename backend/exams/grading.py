@@ -1,6 +1,6 @@
 """
-AI grading module using Anthropic Claude API.
-MCQs are auto-graded instantly. SHORT/LONG answers are graded via Claude Sonnet.
+AI grading module using Google Gemini API.
+MCQs are auto-graded instantly. SHORT/LONG answers are graded via Gemini Flash.
 """
 import json
 import logging

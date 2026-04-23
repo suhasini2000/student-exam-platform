@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
+import Avatar from '../../components/Common/Avatar';
 
 function getState(s) {
   if (s.status === 'NOT_STARTED') return { label: 'Not Started', cls: 'bg-gray-100 text-gray-500' };
@@ -98,10 +99,8 @@ export default function ExamSubmissions() {
           return (
             <div key={s.student_id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center gap-4">
 
-              {/* Avatar initial */}
-              <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm flex items-center justify-center shrink-0">
-                {s.student_name[0]?.toUpperCase()}
-              </div>
+              {/* Avatar / Photo */}
+              <Avatar src={s.profile_photo} name={s.student_name} />
 
               {/* Name + submitted time */}
               <div className="flex-1 min-w-0">

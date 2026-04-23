@@ -2,46 +2,18 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import Avatar from '../components/Common/Avatar';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [examTypes, setExamTypes] = useState([]);
-  const [recentExams, setRecentExams] = useState([]);
-  const [assignedExams, setAssignedExams] = useState([]);
+  const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [typesRes, historyRes, assignedRes, hwRes] = await Promise.all([
-          api.get('/api/exam-types/'),
-          api.get('/api/exams/history/'),
-          api.get('/api/exams/assigned/my/').catch(() => ({ data: [] })),
-          api.get('/api/handwritten/my/').catch(() => ({ data: [] })),
-        ]);
-        setExamTypes(typesRes.data.results || typesRes.data);
-
-        // Merge online exams and handwritten results into one list
-        const onlineExams = (historyRes.data.results || historyRes.data).map(e => ({
-          ...e, _type: 'online', _date: e.completed_at,
-        }));
-        const hwExams = (hwRes.data.results || hwRes.data).map(e => ({
-          ...e, _type: 'handwritten', _date: e.created_at,
-        }));
-        const combined = [...onlineExams, ...hwExams]
-          .sort((a, b) => new Date(b._date) - new Date(a._date))
-          .slice(0, 8);
-        setRecentExams(combined);
-
-        const assigned = assignedRes.data.results || assignedRes.data;
-        setAssignedExams(assigned.filter(e => !e.my_attempt || e.my_attempt.status !== 'COMPLETED').slice(0, 5));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    api.get('/api/exams/assigned/')
+      .then(res => setExams(res.data.results || res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -57,13 +29,7 @@ export default function Dashboard() {
       {/* Welcome */}
       <div className="bg-gradient-to-r from-gray-900 to-indigo-600 rounded-2xl p-8 text-white mb-8">
         <div className="flex items-center gap-4">
-          {user?.profile_photo ? (
-            <img src={user.profile_photo} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-white/50 shrink-0" />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold shrink-0">
-              {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
-            </div>
-          )}
+          <Avatar src={user?.profile_photo} name={user?.first_name || user?.username} size="lg" className="border-2 border-white/50" />
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">
               Welcome, {user?.first_name || user?.username}!
@@ -74,105 +40,95 @@ export default function Dashboard() {
           </div>
         </div>
         <Link to="/subjects" className="inline-block mt-4 bg-white text-indigo-700 px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-50 transition">
-          Start New Exam
+          Start Learning
         </Link>
       </div>
 
-      {/* Assigned Exams */}
-      {assignedExams.length > 0 && (
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Assigned Exams</h2>
-            <Link to="/assigned-exams" className="text-indigo-600 text-sm font-medium hover:underline">View All</Link>
-          </div>
-          <div className="space-y-3">
-            {assignedExams.map((exam) => (
-              <Link key={exam.id} to="/assigned-exams"
-                className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition border border-indigo-100 border-l-4 border-l-indigo-500">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-medium text-gray-800">{exam.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {exam.subject_name} | {exam.total_marks} marks | {exam.duration_minutes} min
-                    </p>
-                  </div>
-                  {exam.my_attempt ? (
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">In Progress</span>
-                  ) : (
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">New</span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Exam Types */}
-        <div>
-          <h2 className="text-xl font-bold mb-4 text-gray-800">{user?.org_type === 'coaching' ? 'Exam Types' : 'Exam Boards'}</h2>
-          <div className="space-y-3">
-            {examTypes.map((et) => (
-              <Link key={et.id} to={`/subjects?exam_type=${et.id}`}
-                className="block bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition border border-gray-100">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold text-gray-800">{et.name}</h3>
-                    <p className="text-sm text-gray-500">{et.subject_count} subjects</p>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Exams */}
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Recent Exams</h2>
-            <Link to="/history" className="text-indigo-600 text-sm font-medium hover:underline">View All</Link>
-          </div>
-          {recentExams.length === 0 ? (
-            <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-              <p className="text-gray-500">No exams taken yet. Start your first exam!</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Recent Exams */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Assigned Exams</h2>
+              <Link to="/assigned-exams" className="text-indigo-600 text-sm font-medium hover:underline">View all</Link>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {recentExams.map((exam) => {
-                const pct = Math.round(exam.percentage || 0);
-                const pctColor = pct >= 60 ? 'text-green-600' : pct >= 40 ? 'text-yellow-600' : 'text-red-600';
-                const isHw = exam._type === 'handwritten';
-                const linkTo = isHw ? '/handwritten-results' : `/result/${exam.id}`;
-                return (
-                  <Link key={`${exam._type}-${exam.id}`} to={linkTo}
-                    className="block bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition border border-gray-100">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-gray-800">
-                          {isHw ? exam.title : exam.subject_name}
-                          {isHw && <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Handwritten</span>}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {exam.subject_name}{!isHw && exam.chapter_name ? ` | ${exam.chapter_name}` : ''} | {new Date(exam._date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${pctColor}`}>{pct}%</div>
-                        {isHw && <p className="text-xs text-gray-400">{exam.obtained_marks}/{exam.total_marks}</p>}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+            {exams.length === 0 ? (
+              <div className="bg-white rounded-xl p-8 text-center border border-gray-100 shadow-sm">
+                <p className="text-gray-500">No exams assigned yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {exams.slice(0, 4).map(exam => (
+                  <div key={exam.id} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition group">
+                    <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-2">{exam.subject_name}</p>
+                    <h3 className="font-bold text-gray-800 mb-4 group-hover:text-indigo-600 transition">{exam.title}</h3>
+                    <Link 
+                      to={`/exam/${exam.id}`}
+                      className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600"
+                    >
+                      Take Exam
+                      <svg className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Quick Actions */}
+          <section>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Links</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { to: '/subjects', label: 'Subjects', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', color: 'bg-blue-50 text-blue-600' },
+                { to: '/history', label: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'bg-purple-50 text-purple-600' },
+                { to: '/progress-card', label: 'Progress', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', color: 'bg-green-50 text-green-600' },
+                { to: '/profile', label: 'Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', color: 'bg-orange-50 text-orange-600' },
+              ].map(item => (
+                <Link key={item.to} to={item.to} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:border-indigo-100 hover:shadow-md transition text-center group">
+                  <div className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center mx-auto mb-2 transition-transform group-hover:scale-110`}>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                </Link>
+              ))}
             </div>
-          )}
+          </section>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-8">
+          {/* Stats */}
+          <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+            <h3 className="font-bold text-gray-800 mb-4">Your Progress</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-500">Exams Completed</span>
+                  <span className="font-bold text-gray-800">12</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="bg-indigo-600 h-2 rounded-full" style={{ width: '65%' }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-500">Average Score</span>
+                  <span className="font-bold text-gray-800">78%</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
   );
 }

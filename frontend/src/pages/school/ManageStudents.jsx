@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import Avatar from '../../components/Common/Avatar';
 
 const initialForm = {
   username: '',
@@ -650,7 +651,10 @@ export default function ManageStudents() {
                       <tr key={student.id} className="hover:bg-gray-50 transition">
                         <td className="px-4 py-3 text-gray-500">{index + 1}</td>
                         <td className="px-4 py-3 font-medium text-gray-800">
-                          {student.first_name} {student.last_name}
+                          <div className="flex items-center gap-2.5">
+                            <Avatar src={student.profile_photo} name={student.first_name || student.username} size="sm" />
+                            <span>{student.first_name} {student.last_name}</span>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-gray-500">@{student.username}</td>
                         <td className="px-4 py-3">

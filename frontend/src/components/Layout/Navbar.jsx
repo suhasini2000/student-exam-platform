@@ -105,6 +105,7 @@ function NavLink({ to, label, icon }) {
 /* ── User menu (avatar + dropdown) ── */
 function UserMenu({ user, onLogout, roleLabel }) {
   const [open, setOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const ref = useRef(null);
   useOutsideClick(ref, () => setOpen(false));
 
@@ -116,8 +117,13 @@ function UserMenu({ user, onLogout, roleLabel }) {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-700 transition"
       >
-        {user?.profile_photo ? (
-          <img src={user.profile_photo} alt="avatar" className="w-8 h-8 rounded-full object-cover border-2 border-gray-600" />
+        {user?.profile_photo && !imgError ? (
+          <img
+            src={user.profile_photo}
+            alt="avatar"
+            onError={() => setImgError(true)}
+            className="w-8 h-8 rounded-full object-cover border-2 border-gray-600"
+          />
         ) : (
           <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white">
             {initial}
@@ -166,6 +172,7 @@ export default function Navbar() {
   const { user, logout, getDashboardPath } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileImgError, setMobileImgError] = useState(false);
   const location = useLocation();
 
   const handleLogout = () => { logout(); navigate('/'); };
@@ -371,9 +378,18 @@ export default function Navbar() {
             <>
               {/* User info strip */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700">
-                <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
-                  {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
-                </div>
+                {user?.profile_photo && !mobileImgError ? (
+                  <img
+                    src={user.profile_photo}
+                    alt="avatar"
+                    onError={() => setMobileImgError(true)}
+                    className="w-9 h-9 rounded-full object-cover border-2 border-gray-700"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                    {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <p className="text-white text-sm font-medium">{user?.first_name || user?.username}</p>
                   <p className="text-gray-400 text-xs capitalize">{user?.role} · {user?.school_name || ''}</p>

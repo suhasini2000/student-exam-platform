@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import Avatar from '../components/Common/Avatar';
 
 const PREVIEW_SIZE = 220;
 
@@ -147,17 +148,7 @@ export default function Profile() {
         {/* Profile Photo */}
         <div className="flex items-center gap-5 mb-6 pb-6 border-b border-gray-200">
           <div className="relative group cursor-pointer" onClick={() => fileRef.current?.click()}>
-            {user.profile_photo ? (
-              <img
-                src={user.profile_photo}
-                alt="Profile"
-                className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600">
-                {(user.first_name?.[0] || user.username?.[0] || '?').toUpperCase()}
-              </div>
-            )}
+            <Avatar src={user.profile_photo} name={user.first_name || user.username} size="xl" />
             <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />

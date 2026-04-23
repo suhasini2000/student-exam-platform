@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import Avatar from '../../components/Common/Avatar';
 
 const initialForm = {
   username: '',
@@ -451,11 +452,7 @@ export default function ManageTeachers() {
                   /* View Mode */
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div className="flex items-center gap-4">
-                      <div className="bg-indigo-50 text-indigo-600 p-2.5 rounded-lg">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
+                      <Avatar src={teacher.profile_photo} name={teacher.first_name || teacher.username} className="!rounded-lg" />
                       <div>
                         <h3 className="font-semibold text-gray-800">
                           {teacher.first_name} {teacher.last_name}

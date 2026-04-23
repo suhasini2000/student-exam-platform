@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -7,20 +7,22 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const formatProfilePhoto = useCallback((userData) => {
+    if (!userData || !userData.profile_photo) return userData;
+
+    // Backend now returns absolute URIs.
+    // Just add a cache buster to force refresh on updates.
+    const url = userData.profile_photo;
+    const separator = url.includes('?') ? '&' : '?';
+    userData.profile_photo = `${url}${separator}t=${Date.now()}`;
+    
+    return userData;
+  }, []);
+
   const fetchProfile = async () => {
     try {
       const res = await api.get('/api/auth/profile/');
-      const userData = res.data;
-      // If photo is a relative path, prefix with API base
-      if (userData.profile_photo && !userData.profile_photo.startsWith('http')) {
-        const baseUrl = import.meta.env.VITE_API_URL || '';
-        userData.profile_photo = baseUrl.endsWith('/') 
-          ? `${baseUrl}${userData.profile_photo.startsWith('/') ? userData.profile_photo.slice(1) : userData.profile_photo}`
-          : `${baseUrl}${userData.profile_photo.startsWith('/') ? userData.profile_photo : '/' + userData.profile_photo}`;
-        
-        // Add cache buster
-        userData.profile_photo += `?t=${Date.now()}`;
-      }
+      const userData = formatProfilePhoto(res.data);
       setUser(userData);
     } catch {
       setUser(null);
@@ -42,15 +44,9 @@ export function AuthProvider({ children }) {
     const res = await api.post('/api/auth/login/', { username, password });
     localStorage.setItem('access_token', res.data.access);
     localStorage.setItem('refresh_token', res.data.refresh);
-    // Fetch profile and return user data
+    
     const profileRes = await api.get('/api/auth/profile/');
-    const userData = profileRes.data;
-    if (userData.profile_photo && !userData.profile_photo.startsWith('http')) {
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      userData.profile_photo = baseUrl.endsWith('/') 
-        ? `${baseUrl}${userData.profile_photo.startsWith('/') ? userData.profile_photo.slice(1) : userData.profile_photo}`
-        : `${baseUrl}${userData.profile_photo.startsWith('/') ? userData.profile_photo : '/' + userData.profile_photo}`;
-    }
+    const userData = formatProfilePhoto(profileRes.data);
     setUser(userData);
     return userData;
   };

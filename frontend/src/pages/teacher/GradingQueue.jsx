@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import Avatar from '../../components/Common/Avatar';
 
 const GRADING_LABELS = {
   PENDING_REVIEW: 'Pending',
@@ -132,7 +133,12 @@ export default function GradingQueue() {
                   const isProcessing = exam.grading_status !== 'PENDING_REVIEW';
                   return (
                     <tr key={exam.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                      <td className="px-5 py-3 font-medium text-gray-800">{exam.student}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar src={exam.profile_photo} name={exam.student} size="sm" />
+                          <span className="font-medium text-gray-800">{exam.student}</span>
+                        </div>
+                      </td>
                       <td className="px-5 py-3 text-gray-600">{exam.subject}</td>
                       <td className="px-5 py-3 text-gray-600 max-w-[180px] truncate">{exam.exam_title || '—'}</td>
                       <td className="text-center px-5 py-3 text-gray-600">{exam.total_questions}</td>

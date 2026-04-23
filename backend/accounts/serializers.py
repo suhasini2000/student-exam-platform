@@ -36,6 +36,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     school_account_name = serializers.SerializerMethodField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -53,6 +54,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if obj.school:
             return obj.school.school_name or obj.school.username
         return None
+
+    def get_profile_photo(self, obj):
+        if not obj.profile_photo:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.profile_photo.url)
+        return obj.profile_photo.url
 
 
 class SchoolCreateTeacherSerializer(serializers.ModelSerializer):
@@ -170,14 +179,23 @@ class SchoolCreateStudentSerializer(serializers.ModelSerializer):
 
 class MemberListSerializer(serializers.ModelSerializer):
     assigned_teachers = serializers.SerializerMethodField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'role', 'student_id', 'teacher_id', 'grade', 'section', 'phone_number',
-            'is_active', 'created_at', 'assigned_teachers',
+            'is_active', 'created_at', 'assigned_teachers', 'profile_photo',
         ]
+
+    def get_profile_photo(self, obj):
+        if not obj.profile_photo:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.profile_photo.url)
+        return obj.profile_photo.url
 
     def get_assigned_teachers(self, obj):
         if obj.role == 'student':

@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
 
     // 2. If it's a relative path (starts with /media or similar), prefix with origin
     // This handles local development or cases where Cloudinary isn't used
-    const baseUrl = window.location.origin;
+    const baseUrl = import.meta.env.VITE_API_URL || 'https://student-exam-backend.onrender.com';
     const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const cleanPath = url.startsWith('/') ? url : '/' + url;
     url = `${cleanBase}${cleanPath}`;

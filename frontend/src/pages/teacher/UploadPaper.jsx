@@ -78,7 +78,9 @@ export default function UploadPaper() {
       const fileInput = document.getElementById('paper-file-input');
       if (fileInput) fileInput.value = '';
     } catch (err) {
-      setError(err.response?.data?.detail || err.response?.data?.error || 'Failed to upload paper. Please try again.');
+      console.error('Upload error:', err);
+      const msg = err.response?.data?.detail || err.response?.data?.error || JSON.stringify(err.response?.data) || 'Failed to upload paper. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

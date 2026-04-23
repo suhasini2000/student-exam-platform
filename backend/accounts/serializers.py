@@ -36,7 +36,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     school_account_name = serializers.SerializerMethodField()
-    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -53,11 +52,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_school_account_name(self, obj):
         if obj.school:
             return obj.school.school_name or obj.school.username
-        return None
-
-    def get_profile_photo(self, obj):
-        if obj.profile_photo:
-            return obj.profile_photo.url
         return None
 
 

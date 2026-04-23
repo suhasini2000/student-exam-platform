@@ -133,7 +133,7 @@ class UpdateMemberView(generics.UpdateAPIView):
 
     def patch(self, request, *args, **kwargs):
         member = self.get_object()
-        allowed = ['first_name', 'last_name', 'username', 'email', 'phone_number', 'grade', 'section', 'student_id', 'teacher_id']
+        allowed = ['first_name', 'last_name', 'username', 'email', 'phone_number', 'grade', 'section', 'student_id', 'teacher_id', 'profile_photo']
         for field in allowed:
             if field in request.data and request.data[field] != '':
                 setattr(member, field, request.data[field])

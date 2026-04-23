@@ -12,14 +12,22 @@ export function AuthProvider({ children }) {
 
     let url = userData.profile_photo;
     
-    // If it's a relative path (starts with /media or similar), prefix with origin
-    if (!url.startsWith('http')) {
-      const baseUrl = window.location.origin;
-      const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-      const cleanPath = url.startsWith('/') ? url : '/' + url;
-      url = `${cleanBase}${cleanPath}`;
+    // 1. If it's already an absolute URL (like Cloudinary), don't touch it.
+    // Cloudinary URLs usually start with 'http://res.cloudinary.com' or 'https://res.cloudinary.com'
+    if (url.startsWith('http')) {
+      // Just add a version/cache buster if it's not already there
+      const separator = url.includes('?') ? '&' : '?';
+      userData.profile_photo = `${url}${separator}t=${Date.now()}`;
+      return userData;
     }
 
+    // 2. If it's a relative path (starts with /media or similar), prefix with origin
+    // This handles local development or cases where Cloudinary isn't used
+    const baseUrl = window.location.origin;
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanPath = url.startsWith('/') ? url : '/' + url;
+    url = `${cleanBase}${cleanPath}`;
+    
     // Add cache buster
     const separator = url.includes('?') ? '&' : '?';
     userData.profile_photo = `${url}${separator}t=${Date.now()}`;

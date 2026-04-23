@@ -56,12 +56,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return None
 
     def get_profile_photo(self, obj):
-        if not obj.profile_photo:
-            return None
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.profile_photo.url)
-        return obj.profile_photo.url
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
 
 
 class SchoolCreateTeacherSerializer(serializers.ModelSerializer):
@@ -190,12 +187,9 @@ class MemberListSerializer(serializers.ModelSerializer):
         ]
 
     def get_profile_photo(self, obj):
-        if not obj.profile_photo:
-            return None
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.profile_photo.url)
-        return obj.profile_photo.url
+        if obj.profile_photo:
+            return obj.profile_photo.url
+        return None
 
     def get_assigned_teachers(self, obj):
         if obj.role == 'student':

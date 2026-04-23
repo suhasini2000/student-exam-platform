@@ -10,9 +10,17 @@ export function AuthProvider({ children }) {
   const formatProfilePhoto = useCallback((userData) => {
     if (!userData || !userData.profile_photo) return userData;
 
-    // Backend now returns absolute URIs.
-    // Just add a cache buster to force refresh on updates.
-    const url = userData.profile_photo;
+    let url = userData.profile_photo;
+    
+    // If it's a relative path (starts with /media or similar), prefix with origin
+    if (!url.startsWith('http')) {
+      const baseUrl = window.location.origin;
+      const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      const cleanPath = url.startsWith('/') ? url : '/' + url;
+      url = `${cleanBase}${cleanPath}`;
+    }
+
+    // Add cache buster
     const separator = url.includes('?') ? '&' : '?';
     userData.profile_photo = `${url}${separator}t=${Date.now()}`;
     

@@ -899,7 +899,7 @@ class AssignedExamSubmissionsView(APIView):
             rows.append({
                 'student_id': student.id,
                 'student_name': student.get_full_name() or student.username,
-                'profile_photo': request.build_absolute_uri(student.profile_photo.url) if student.profile_photo else None,
+                'profile_photo': student.profile_photo.url if student.profile_photo else None,
                 'user_exam_id': ue.id if ue else None,
                 'status': ue.status if ue else 'NOT_STARTED',
                 'grading_status': ue.grading_status if ue else None,
@@ -940,7 +940,7 @@ class TeacherReviewView(APIView):
         data = UserExamDetailSerializer(user_exam).data
         data['student_name'] = user_exam.user.get_full_name() or user_exam.user.username
         data['student_username'] = user_exam.user.username
-        data['profile_photo'] = request.build_absolute_uri(user_exam.user.profile_photo.url) if user_exam.user.profile_photo else None
+        data['profile_photo'] = user_exam.user.profile_photo.url if user_exam.user.profile_photo else None
         data['assigned_exam_id'] = user_exam.assigned_exam_id
         return Response(data)
 
@@ -1454,7 +1454,7 @@ class PendingReviewListView(APIView):
         data = [{
             'id': e.id,
             'student': e.user.get_full_name() or e.user.username,
-            'profile_photo': request.build_absolute_uri(e.user.profile_photo.url) if e.user.profile_photo else None,
+            'profile_photo': e.user.profile_photo.url if e.user.profile_photo else None,
             'subject': e.subject.name if e.subject else 'N/A',            'exam_title': e.assigned_exam.title if e.assigned_exam else None,
             'total_questions': e.total_questions,
             'completed_at': e.completed_at,

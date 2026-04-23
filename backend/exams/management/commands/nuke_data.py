@@ -38,7 +38,11 @@ class Command(BaseCommand):
         # 4. Clear Images
         SiteImage.objects.all().delete()
         
-        # 5. Clear Users (except superusers)
+        # 5. Clear User school references (to avoid Protected Error)
+        self.stdout.write("Breaking school references...")
+        User.objects.all().update(school=None)
+        
+        # 6. Clear Users (except superusers)
         users_to_delete = User.objects.filter(is_superuser=False)
         u_count = users_to_delete.count()
         users_to_delete.delete()

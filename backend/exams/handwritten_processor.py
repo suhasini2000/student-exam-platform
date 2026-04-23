@@ -17,12 +17,33 @@ logger = logging.getLogger(__name__)
 
 def _encode_file(file_field):
     """Read a file and return (raw_bytes, media_type)."""
-    path = file_field.path
-    mime, _ = mimetypes.guess_type(path)
+    url = file_field.url
+    mime, _ = mimetypes.guess_type(url)
     if not mime:
         mime = 'application/octet-stream'
-    with open(path, 'rb') as f:
-        data = f.read()
+        
+    if url.startswith('http'):
+        import requests
+        from requests.auth import HTTPBasicAuth
+        
+        # Get credentials from settings
+        cloudinary_config = settings.CLOUDINARY_STORAGE
+        auth = HTTPBasicAuth(cloudinary_config['API_KEY'], cloudinary_config['API_SECRET'])
+        
+        response = requests.get(url, auth=auth)
+        if response.status_code == 200:
+            data = response.content
+        else:
+            # Fallback to standard open
+            file_field.open('rb')
+            data = file_field.read()
+            file_field.close()
+    else:
+        # Local file
+        file_field.open('rb')
+        data = file_field.read()
+        file_field.close()
+        
     return data, mime
 
 

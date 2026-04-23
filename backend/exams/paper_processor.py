@@ -34,11 +34,29 @@ def generate_questions_from_paper(exam_paper_id):
         if exam_paper.extracted_text:
             content.append(f"Context: {exam_paper.extracted_text[:10000]}")
         elif exam_paper.file:
-            # Use .open() and .read() to properly handle authenticated storage (Cloudinary)
-            try:
+            # For Cloudinary, sometimes .open() fails with 401 if not handled perfectly by the library.
+            # We will use requests with basic auth to fetch the file directly if it's a remote URL.
+            url = exam_paper.file.url
+            if url.startswith('http'):
+                import requests
+                from requests.auth import HTTPBasicAuth
+                
+                # Get credentials from settings
+                cloudinary_config = settings.CLOUDINARY_STORAGE
+                auth = HTTPBasicAuth(cloudinary_config['API_KEY'], cloudinary_config['API_SECRET'])
+                
+                response = requests.get(url, auth=auth)
+                if response.status_code == 200:
+                    pdf_data = response.content
+                else:
+                    # Fallback to standard open if request fails
+                    exam_paper.file.open('rb')
+                    pdf_data = exam_paper.file.read()
+                    exam_paper.file.close()
+            else:
+                # Local file
                 exam_paper.file.open('rb')
                 pdf_data = exam_paper.file.read()
-            finally:
                 exam_paper.file.close()
                 
             content.append({'mime_type': 'application/pdf', 'data': pdf_data})

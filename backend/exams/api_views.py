@@ -482,6 +482,13 @@ class ExamPaperUploadView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSchoolOrTeacher]
     parser_classes = [MultiPartParser, FormParser]
 
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.exception("Error uploading paper")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def perform_create(self, serializer):
         user = self.request.user
         school = user if user.role == 'school' else user.school

@@ -313,15 +313,22 @@ class TeacherAssignment(models.Model):
         return f"{self.teacher.get_full_name()} - {self.subject.name} (All Students)"
 
     def get_students(self):
+        # 1. If students are explicitly linked via M2M, use them exclusively
         if self.pk and self.students.exists():
             return self.students.all()
+        
+        # 2. If grade/section is specified, return students matching those filters
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        filters = dict(school=self.school, role='student', is_active=True)
-        if self.grade and self.grade != '-':
-            filters['grade'] = self.grade
+        
+        # If no grade/section is set and no M2M students, return empty (don't default to entire school)
+        if not self.grade or self.grade == '-':
+            return User.objects.none()
+            
+        filters = dict(school=self.school, role='student', is_active=True, grade=self.grade)
         if self.section and self.section != '-':
             filters['section'] = self.section
+            
         return User.objects.filter(**filters)
 
     class Meta:

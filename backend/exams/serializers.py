@@ -337,7 +337,7 @@ class TeacherAssignmentSerializer(serializers.ModelSerializer):
     def get_grade_display(self, obj):
         if obj.grade and obj.grade != '-':
             return f"Class {obj.grade}{obj.section}"
-        return "All Students"
+        return "Specific Students (No Class Filter)"
 
 
 class TeacherAssignmentCreateSerializer(serializers.Serializer):

@@ -18,8 +18,12 @@ services:
         value: "*"
       - key: GEMINI_API_KEY
         sync: false # You will need to add this manually in the dashboard
-      - key: PYTHON_VERSION
-        value: 3.9.0
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
 
 databases:
   - name: student-exam-db

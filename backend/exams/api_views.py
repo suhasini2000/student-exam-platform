@@ -579,6 +579,7 @@ class CreatePaperFromPapersView(APIView):
         except Subject.DoesNotExist:
             return Response({'error': 'Subject not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        from .paper_processor import generate_paper_from_multiple
         import threading
         thread = threading.Thread(
             target=generate_paper_from_multiple,

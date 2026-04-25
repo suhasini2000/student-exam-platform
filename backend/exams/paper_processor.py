@@ -17,6 +17,24 @@ from .models import ExamPaper, Question
 
 logger = logging.getLogger(__name__)
 
+def get_gemini_model(api_key):
+    """Try multiple model versions to avoid 404 errors."""
+    genai.configure(api_key=api_key)
+    # Order: Latest Flash -> Flash -> Pro -> Legacy Pro
+    models_to_try = [
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro',
+        'gemini-pro'
+    ]
+    for model_name in models_to_try:
+        try:
+            return genai.GenerativeModel(model_name)
+        except: continue
+    # Ultimate legacy fallback
+    return genai.GenerativeModel('gemini-pro')
+
 def _retrieve_file_data(file_field):
     """Silent, high-speed file retrieval."""
     url = file_field.url
@@ -83,23 +101,20 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
         
         data, mime, debug_info = _retrieve_file_data(exam_paper.file)
         if not data:
-            raise ValueError(f"Could not read your paper. Please ensure the upload was successful. ({debug_info})")
+            raise ValueError(f"Could not read your paper. ({debug_info})")
 
         # Step 2: AI Generation
-        exam_paper.generation_error = '[PROGRESS] AI is thinking (this takes 30-60s)...'
+        exam_paper.generation_error = '[PROGRESS] AI is thinking (30-60s)...'
         exam_paper.save()
 
         api_key = settings.GEMINI_API_KEY
-        genai.configure(api_key=api_key)
-        
-        # Priority model: 1.5-flash is extremely fast and reliable
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # USE HELPER FUNCTION (Fix for 404 error)
+        model = get_gemini_model(api_key)
         
         prompt = f"Generate {num_mcq} MCQ, {num_short} Short, and {num_long} Long questions for Class 10 {exam_paper.subject.name}."
         if instructions: prompt += f"\nSpecific Instructions: {instructions}"
         prompt += '\nReturn ONLY a JSON object with a "questions" key containing: question_type, question_text, marks, difficulty, option_a, option_b, option_c, option_d, correct_answer (A/B/C/D), model_answer.'
         
-        # Increased timeout to 10 minutes for slow server connections
         response = model.generate_content(
             [prompt, {'mime_type': mime, 'data': data}],
             request_options={'timeout': 600}
@@ -152,8 +167,7 @@ def generate_paper_from_multiple(paper_ids, instructions, subject, school, teach
     try:
         db.connections.close_all()
         api_key = settings.GEMINI_API_KEY
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = get_gemini_model(api_key)
         num_mcq, num_short, num_long = kwargs.get('num_mcq', 20), kwargs.get('num_short', 5), kwargs.get('num_long', 4)
         
         prompt = f"Generate {num_mcq} MCQ, {num_short} Short, and {num_long} Long questions for Class 10 {subject.name}."
@@ -201,8 +215,7 @@ def generate_questions_from_instructions(subject, chapters, topics, marks_distri
     try:
         db.connections.close_all()
         api_key = settings.GEMINI_API_KEY
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = get_gemini_model(api_key)
         num_mcq, num_short, num_long = marks_distribution.get('num_mcq', 20), marks_distribution.get('num_short', 5), marks_distribution.get('num_long', 4)
         
         prompt = f"Generate {num_mcq} MCQ, {num_short} Short, and {num_long} Long questions for Class 10 {subject.name}."

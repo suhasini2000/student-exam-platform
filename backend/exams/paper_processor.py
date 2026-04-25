@@ -5,8 +5,11 @@ import json
 import logging
 import mimetypes
 import requests
+from requests.auth import HTTPBasicAuth
 import google.generativeai as genai
 from django.conf import settings
+import cloudinary
+import cloudinary.api
 from .models import ExamPaper, Question
 
 logger = logging.getLogger(__name__)

@@ -8,6 +8,7 @@ import json
 import logging
 import mimetypes
 import requests
+from requests.auth import HTTPBasicAuth
 
 from django.conf import settings
 

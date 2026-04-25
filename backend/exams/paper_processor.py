@@ -3,9 +3,13 @@ Extract text from uploaded exam papers (PDF) and generate questions using Gemini
 """
 import json
 import logging
+import requests
+from requests.auth import HTTPBasicAuth
 from django.utils import timezone
 import google.generativeai as genai
 from django.conf import settings
+import cloudinary
+import cloudinary.utils
 from .models import ExamPaper, Question
 
 logger = logging.getLogger(__name__)
@@ -24,43 +28,74 @@ def generate_questions_from_paper(exam_paper_id):
         exam_paper = ExamPaper.objects.get(id=exam_paper_id)
         api_key = settings.GEMINI_API_KEY
         if not api_key: 
-            raise ValueError("GEMINI_API_KEY not configured")
+            logger.error("GEMINI_API_KEY not configured")
+            return
 
         model = get_gemini_model(api_key)
-        
         prompt = f"""Generate 20 MCQ, 5 Short, and 4 Long questions for Class 10 {exam_paper.subject.name}.
         Return ONLY a JSON object with a "questions" key. 
         Each question must have: question_type (MCQ/SHORT/LONG), question_text, marks, and difficulty."""
         
         content = [prompt]
+        pdf_data = None
+
         if exam_paper.extracted_text:
             content.append(f"Context: {exam_paper.extracted_text[:10000]}")
         elif exam_paper.file:
-            # SUPER-ROBUST READ: Use Django's .open('rb') to leverage internal storage auth
+            # TRY 1: Native Django file open
             try:
                 exam_paper.file.open('rb')
                 pdf_data = exam_paper.file.read()
                 exam_paper.file.close()
-                content.append({'mime_type': 'application/pdf', 'data': pdf_data})
             except Exception as e:
-                logger.error(f"Native storage read failed for {exam_paper.id}: {e}")
-                # Fallback to authenticated request for Cloudinary
-                import requests
-                from requests.auth import HTTPBasicAuth
+                logger.warning(f"Native open failed: {e}")
+
+            # TRY 2: Authenticated request if Cloudinary
+            if not pdf_data:
                 url = exam_paper.file.url
-                auth = HTTPBasicAuth(settings.CLOUDINARY_STORAGE['API_KEY'], settings.CLOUDINARY_STORAGE['API_SECRET'])
-                response = requests.get(url, auth=auth, timeout=20)
-                if response.status_code == 200:
-                    content.append({'mime_type': 'application/pdf', 'data': response.content})
+                if 'cloudinary.com' in url:
+                    # Configure Cloudinary SDK
+                    cloudinary.config(
+                        cloud_name=settings.CLOUDINARY_STORAGE['CLOUD_NAME'],
+                        api_key=settings.CLOUDINARY_STORAGE['API_KEY'],
+                        api_secret=settings.CLOUDINARY_STORAGE['API_SECRET']
+                    )
+                    
+                    # Attempt to get signed URL or fetch directly with API keys
+                    auth = HTTPBasicAuth(
+                        settings.CLOUDINARY_STORAGE['API_KEY'], 
+                        settings.CLOUDINARY_STORAGE['API_SECRET']
+                    )
+                    
+                    try:
+                        response = requests.get(url, auth=auth, timeout=30)
+                        if response.status_code == 200:
+                            pdf_data = response.content
+                        else:
+                            # Final fallback: Try without auth but maybe it's just a timing issue
+                            response = requests.get(url, timeout=30)
+                            if response.status_code == 200:
+                                pdf_data = response.content
+                            else:
+                                raise ValueError(f"HTTP {response.status_code} at {url}")
+                    except Exception as req_err:
+                        logger.error(f"Cloudinary download error: {req_err}")
+                        raise req_err
                 else:
-                    raise ValueError(f"Analysis Failed: Unable to access physical document (HTTP {response.status_code})")
+                    # Non-cloudinary remote file
+                    response = requests.get(url, timeout=30)
+                    pdf_data = response.content
+            
+            if pdf_data:
+                content.append({'mime_type': 'application/pdf', 'data': pdf_data})
+            else:
+                raise ValueError("Could not retrieve document data.")
         else:
             raise ValueError("No text or file available for processing")
 
         response = model.generate_content(content)
         text = response.text.strip()
         
-        # Robust JSON cleaning
         if '```json' in text:
             text = text.split('```json')[1].split('```')[0].strip()
         elif '```' in text:
@@ -69,9 +104,6 @@ def generate_questions_from_paper(exam_paper_id):
         data = json.loads(text)
         questions_list = data.get('questions', [])
         
-        if not questions_list:
-            raise ValueError("AI failed to generate questions. Please try again.")
-
         created_count = 0
         for q in questions_list:
             Question.objects.create(
@@ -94,7 +126,7 @@ def generate_questions_from_paper(exam_paper_id):
         exam_paper.questions_generated = True
         exam_paper.generation_error = ''
         exam_paper.save()
-        logger.info(f"Saved {created_count} questions for school {exam_paper.school}")
+        logger.info(f"Saved {created_count} questions for {exam_paper.school}")
         
     except Exception as e:
         exam_paper.generation_error = str(e)

@@ -24,30 +24,37 @@ def _encode_file(file_field):
     if not mime:
         mime = 'application/octet-stream'
         
-    # ATTEMPT 1: Native Storage Read (Best for django-cloudinary-storage)
+    data = None
+    # 1. Native open
     try:
         file_field.open('rb')
         data = file_field.read()
         file_field.close()
-        return data, mime
     except Exception as e:
-        logger.warning(f"Native storage read failed, trying URL: {e}")
-        
-    # ATTEMPT 2: Authenticated URL fetch (Fallback for Cloudinary 401s)
-    if url.startswith('http'):
+        logger.warning(f"Handwritten native open failed: {e}")
+
+    # 2. Cloudinary Auth fallback
+    if not data and url.startswith('http'):
         try:
-            cloudinary_config = settings.CLOUDINARY_STORAGE
-            auth = HTTPBasicAuth(cloudinary_config['API_KEY'], cloudinary_config['API_SECRET'])
-            response = requests.get(url, auth=auth, timeout=20)
+            auth = HTTPBasicAuth(
+                settings.CLOUDINARY_STORAGE['API_KEY'], 
+                settings.CLOUDINARY_STORAGE['API_SECRET']
+            )
+            response = requests.get(url, auth=auth, timeout=30)
             if response.status_code == 200:
-                return response.content, mime
+                data = response.content
             else:
-                raise ValueError(f"URL fetch failed with status {response.status_code}")
+                # 3. Simple URL fetch
+                response = requests.get(url, timeout=30)
+                if response.status_code == 200:
+                    data = response.content
         except Exception as e:
-            logger.error(f"Authenticated URL fetch failed for {url}: {e}")
-            raise e
+            logger.error(f"Handwritten Cloudinary fetch failed for {url}: {e}")
             
-    raise ValueError(f"Could not read document at {url}")
+    if not data:
+        raise ValueError(f"Could not read document at {url}")
+        
+    return data, mime
 
 
 def _build_document_block(data, media_type):
@@ -81,7 +88,7 @@ def process_handwritten_exam(handwritten_exam_id, include_analysis=False):
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
 
-        # Encode both files with robust logic
+        # Encode both files
         qp_data, qp_mime = _encode_file(exam.question_paper)
         ans_data, ans_mime = _encode_file(exam.answer_sheet)
 

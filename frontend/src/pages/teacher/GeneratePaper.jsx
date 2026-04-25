@@ -222,7 +222,7 @@ export default function GeneratePaper() {
         num_long: parseInt(paperForm.num_long),
       });
 
-      setSuccess('Question generation successful! The AI has created the questions. You can now use them to create an exam.');
+      setSuccess('Question generation started! The AI is working on your questions in the background. Please check the "Uploaded Papers" list in a few moments to see the results.');
       setPaperFiles([]);
       setSelectedExistingPaperIds([]);
       setPaperForm({ subject: '', instructions: '', total_marks: 50, num_mcq: 20, num_short: 5, num_long: 4 });
@@ -263,7 +263,7 @@ export default function GeneratePaper() {
         num_long: parseInt(instructionForm.num_long),
       });
 
-      setSuccess('Question generation successful! The AI has created the questions. You can now use them to create an exam.');
+      setSuccess('Question generation started! The AI is working on your questions in the background. Please check the "Uploaded Papers" list in a few moments to see the results.');
       setInstructionForm({ subject: '', chapter_ids: [], topics: '', total_marks: 50, num_mcq: 20, num_short: 5, num_long: 4 });
       setChapters([]);
     } catch (err) {

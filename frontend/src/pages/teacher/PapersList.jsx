@@ -42,8 +42,9 @@ export default function PapersList() {
       await fetchPapers(page);
       setGenerating((prev) => ({ ...prev, [paperId]: false }));
     } catch (err) {
-      const msg = err.response?.data?.detail || err.response?.data?.error || 'Failed to generate questions';
-      alert(msg);
+      console.error('Generation error:', err);
+      const msg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Failed to generate questions';
+      alert(`Error: ${msg}`);
       setGenerating((prev) => ({ ...prev, [paperId]: false }));
       await fetchPapers(page);
     }

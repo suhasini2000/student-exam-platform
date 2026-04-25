@@ -8,7 +8,6 @@ import json
 import logging
 import mimetypes
 import requests
-from requests.auth import HTTPBasicAuth
 
 from django.conf import settings
 
@@ -33,23 +32,28 @@ def _encode_file(file_field):
     except Exception as e:
         logger.warning(f"Handwritten native open failed: {e}")
 
-    # 2. Cloudinary Auth fallback
-    if not data and url.startswith('http'):
-        try:
-            auth = HTTPBasicAuth(
-                settings.CLOUDINARY_STORAGE['API_KEY'], 
-                settings.CLOUDINARY_STORAGE['API_SECRET']
-            )
-            response = requests.get(url, auth=auth, timeout=30)
-            if response.status_code == 200:
-                data = response.content
-            else:
-                # 3. Simple URL fetch
-                response = requests.get(url, timeout=30)
+    # 2. Simple unauthenticated request (Cloudinary public URLs don't need auth)
+    if not data:
+        if not url.startswith('http'):
+            logger.error(f"Cannot retrieve local file via HTTP: {url}")
+        else:
+            try:
+                response = requests.get(url, timeout=30, allow_redirects=True)
                 if response.status_code == 200:
                     data = response.content
-        except Exception as e:
-            logger.error(f"Handwritten Cloudinary fetch failed for {url}: {e}")
+                    logger.info(f"Successfully downloaded file from {url}")
+                elif response.status_code == 401:
+                    logger.error(f"HTTP 401 Unauthorized: Cloudinary free trial may have expired or file is private. URL: {url}")
+                    raise ValueError("Access denied to file. Check Cloudinary account status and file permissions.")
+                elif response.status_code == 404:
+                    logger.error(f"HTTP 404 Not Found fetching {url}")
+                    raise ValueError(f"File not found at {url}")
+                else:
+                    logger.error(f"HTTP {response.status_code} fetching {url}")
+                    raise ValueError(f"HTTP {response.status_code}: Unable to access document at {url}")
+            except requests.exceptions.RequestException as req_err:
+                logger.error(f"Network error downloading file from {url}: {req_err}")
+                raise ValueError(f"Network error: Could not download file. Check your internet connection.")
             
     if not data:
         raise ValueError(f"Could not read document at {url}")
@@ -80,6 +84,12 @@ def process_handwritten_exam(handwritten_exam_id, include_analysis=False):
     if not api_key:
         exam.status = 'FAILED'
         exam.error_message = 'Gemini API key not configured.'
+        exam.save()
+        return
+        
+    if api_key.startswith('sk-ant-'):
+        exam.status = 'FAILED'
+        exam.error_message = 'Invalid API key format: An Anthropic key was provided instead of a Gemini key.'
         exam.save()
         return
 

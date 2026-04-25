@@ -1,7 +1,7 @@
 services:
   - type: web
     name: student-exam-backend
-    runtime: python
+    runtime: python-3.11
     rootDir: backend
     buildCommand: "./build.sh"
     startCommand: "gunicorn exam_platform.wsgi"

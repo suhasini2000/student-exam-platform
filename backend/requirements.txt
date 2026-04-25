@@ -9,8 +9,10 @@ python-decouple==3.8
 python-dotenv==1.0.1
 requests==2.31.0
 google-generativeai>=0.8.0
-grpcio>=1.60.0
-grpcio-status>=1.60.0
+grpcio==1.60.0
+grpcio-tools==1.60.0
+grpcio-status==1.60.0
+protobuf>=4.24.0
 pdfplumber==0.11.0
 gunicorn==21.2.0
 whitenoise==6.6.0

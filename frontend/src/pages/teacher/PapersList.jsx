@@ -165,8 +165,10 @@ export default function PapersList() {
                         {paper.subject_name} | Total Marks: {paper.total_marks}
                       </p>
                       {paper.generation_error && (
-                        <p className="text-sm text-red-500 mt-1">
-                          Error: {paper.generation_error}
+                        <p className={`text-sm mt-1 font-medium ${
+                          paper.generation_error.includes('Step') ? 'text-indigo-600' : 'text-red-500'
+                        }`}>
+                          {paper.generation_error.includes('Step') ? '⚡ Status: ' : '❌ Error: '}{paper.generation_error}
                         </p>
                       )}
                     </div>

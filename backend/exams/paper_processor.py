@@ -7,7 +7,11 @@ import mimetypes
 import requests
 import re
 import google.generativeai as genai
+import cloudinary
+import cloudinary.utils
+import cloudinary.api
 from django.conf import settings
+from django import db
 from .models import ExamPaper, Question
 
 logger = logging.getLogger(__name__)
@@ -50,13 +54,9 @@ def _retrieve_file_data(file_field):
     # TRY 2: Authenticated Cloudinary SDK Fetch
     if 'cloudinary' in url.lower():
         try:
-            import cloudinary
-            import cloudinary.utils
-            import cloudinary.api
-            
             keys = settings.CLOUDINARY_STORAGE
             if not keys.get('API_SECRET'):
-                debug_log.append("Cloudinary: API_SECRET is empty in settings")
+                debug_log.append("Cloudinary: API_SECRET missing")
             else:
                 cloudinary.config(
                     cloud_name=keys['CLOUD_NAME'],
@@ -65,36 +65,32 @@ def _retrieve_file_data(file_field):
                     secure=True
                 )
                 
-                # Enhanced Public ID Extraction
-                # Cloudinary URLs from Django often look like: .../upload/v1234/media/exam_papers/...
-                # The public_id MUST include the 'media/' prefix if it's in the URL
+                # Robust Public ID Extraction
                 public_id = url.split('/upload/')[-1]
                 if '/private/' in url: public_id = url.split('/private/')[-1]
                 if '/authenticated/' in url: public_id = url.split('/authenticated/')[-1]
-                
-                # Remove version (v1234/) and extension (.jpg)
                 public_id = re.sub(r'^v\d+/', '', public_id).rsplit('.', 1)[0]
                 
+                # Try image then raw (PDF)
                 for r_type in ['image', 'raw']:
                     for d_type in ['upload', 'private', 'authenticated']:
                         try:
-                            # Generate signed URL
                             signed_url, _ = cloudinary.utils.cloudinary_url(
                                 public_id, sign_url=True, secure=True,
                                 resource_type=r_type, type=d_type
                             )
-                            resp = requests.get(signed_url, timeout=15)
+                            resp = requests.get(signed_url, timeout=10)
                             if resp.status_code == 200:
                                 return resp.content, mime, f"Success (SDK {r_type}/{d_type})"
                         except: continue
-                debug_log.append(f"Cloudinary: Tried ID '{public_id}' - all failed")
+                debug_log.append(f"Cloudinary: ID '{public_id}' failed all combinations")
         except Exception as e:
             debug_log.append(f"Cloudinary Logic: {str(e)}")
 
     # TRY 3: Standard HTTP Fallback
     if url.startswith('http'):
         try:
-            resp = requests.get(url, timeout=15, allow_redirects=True)
+            resp = requests.get(url, timeout=10, allow_redirects=True)
             if resp.status_code == 200:
                 return resp.content, mime, "Success (HTTP)"
             debug_log.append(f"HTTP: Error {resp.status_code}")
@@ -132,7 +128,7 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
 
         api_key = settings.GEMINI_API_KEY
         if not api_key or api_key.startswith('sk-ant-'):
-            raise ValueError("Invalid Gemini API Key. Please provide a key starting with 'AIza'.")
+            raise ValueError("Invalid Gemini API Key. Provide a key starting with 'AIza'.")
 
         model = get_gemini_model(api_key)
         
@@ -198,7 +194,7 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
             except: continue
             
         if created_count == 0:
-            raise ValueError("Failed to save questions to database.")
+            raise ValueError("Failed to save questions.")
 
         exam_paper.questions_generated = True
         exam_paper.generation_error = ''
@@ -207,6 +203,8 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
     except Exception as e:
         logger.error(f"Generation Error: {e}")
         try:
+            # Clear local DB connection cache to ensure we can save the error
+            db.connections.close_all()
             ep = ExamPaper.objects.get(id=exam_paper_id)
             ep.generation_error = str(e)
             ep.save()

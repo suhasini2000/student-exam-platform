@@ -65,14 +65,20 @@ def _retrieve_file_data(file_field):
                     secure=True
                 )
                 
-                # Robust Public ID Extraction
-                # Supports: .../upload/v1234/folder/id.jpg OR .../upload/id
-                match = re.search(r'/(?:upload|private|authenticated)/(?:v\d+/)?(.+?)(?:\.[a-z0-9]+)?$', url)
-                public_id = match.group(1) if match else url.split('/')[-1].rsplit('.', 1)[0]
+                # Enhanced Public ID Extraction
+                # Cloudinary URLs from Django often look like: .../upload/v1234/media/exam_papers/...
+                # The public_id MUST include the 'media/' prefix if it's in the URL
+                public_id = url.split('/upload/')[-1]
+                if '/private/' in url: public_id = url.split('/private/')[-1]
+                if '/authenticated/' in url: public_id = url.split('/authenticated/')[-1]
+                
+                # Remove version (v1234/) and extension (.jpg)
+                public_id = re.sub(r'^v\d+/', '', public_id).rsplit('.', 1)[0]
                 
                 for r_type in ['image', 'raw']:
                     for d_type in ['upload', 'private', 'authenticated']:
                         try:
+                            # Generate signed URL
                             signed_url, _ = cloudinary.utils.cloudinary_url(
                                 public_id, sign_url=True, secure=True,
                                 resource_type=r_type, type=d_type
@@ -81,7 +87,7 @@ def _retrieve_file_data(file_field):
                             if resp.status_code == 200:
                                 return resp.content, mime, f"Success (SDK {r_type}/{d_type})"
                         except: continue
-                debug_log.append("Cloudinary: All SDK combinations failed (401/404)")
+                debug_log.append(f"Cloudinary: Tried ID '{public_id}' - all failed")
         except Exception as e:
             debug_log.append(f"Cloudinary Logic: {str(e)}")
 

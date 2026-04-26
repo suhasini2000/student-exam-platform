@@ -6,6 +6,7 @@ import logging
 import mimetypes
 import requests
 import re
+import time
 import google.generativeai as genai
 import cloudinary
 import cloudinary.utils
@@ -18,24 +19,22 @@ from .models import ExamPaper, Question
 logger = logging.getLogger(__name__)
 
 def get_gemini_model(api_key):
-    """Try multiple model versions to avoid 404 errors."""
-    genai.configure(api_key=api_key)
-    # Order: Latest Flash -> Flash -> Pro -> Legacy Pro
+    """Try multiple model versions with REST transport for stability."""
+    # Force REST transport to prevent hanging on cloud servers
+    genai.configure(api_key=api_key, transport='rest')
     models_to_try = [
         'gemini-1.5-flash-latest',
         'gemini-1.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-pro',
         'gemini-pro'
     ]
     for model_name in models_to_try:
         try:
             return genai.GenerativeModel(model_name)
         except: continue
-    # Ultimate legacy fallback
-    return genai.GenerativeModel('gemini-pro')
+    return genai.GenerativeModel('gemini-1.5-flash')
 
-def _retrieve_file_data(file_field):
+def _retrieve_file_data(file_field, paper_obj=None):
     """Silent, high-speed file retrieval."""
     url = file_field.url
     mime, _ = mimetypes.guess_type(url)
@@ -51,7 +50,7 @@ def _retrieve_file_data(file_field):
         try:
             test_url = f"{url}{ext}"
             if session.head(test_url, timeout=3, allow_redirects=True).status_code == 200:
-                resp = session.get(test_url, timeout=5)
+                resp = session.get(test_url, timeout=10)
                 if resp.status_code == 200:
                     return resp.content, mime, f"Public-{ext}"
         except: continue
@@ -69,7 +68,7 @@ def _retrieve_file_data(file_field):
                     try:
                         s_url, _ = cloudinary.utils.cloudinary_url(f"{public_id}{ext}", sign_url=True, secure=True, resource_type=r_type)
                         if session.head(s_url, timeout=3).status_code == 200:
-                            resp = session.get(s_url, timeout=5)
+                            resp = session.get(s_url, timeout=10)
                             if resp.status_code == 200:
                                 return resp.content, mime, f"Signed-{r_type}{ext}"
                     except: continue
@@ -101,23 +100,23 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
         
         data, mime, debug_info = _retrieve_file_data(exam_paper.file)
         if not data:
-            raise ValueError(f"Could not read your paper. ({debug_info})")
+            raise ValueError(f"Could not read your paper. Please ensure the upload was successful. ({debug_info})")
 
         # Step 2: AI Generation
-        exam_paper.generation_error = '[PROGRESS] AI is thinking (30-60s)...'
+        exam_paper.generation_error = '[PROGRESS] AI is thinking (REST Mode)...'
         exam_paper.save()
 
         api_key = settings.GEMINI_API_KEY
-        # USE HELPER FUNCTION (Fix for 404 error)
         model = get_gemini_model(api_key)
         
         prompt = f"Generate {num_mcq} MCQ, {num_short} Short, and {num_long} Long questions for Class 10 {exam_paper.subject.name}."
         if instructions: prompt += f"\nSpecific Instructions: {instructions}"
-        prompt += '\nReturn ONLY a JSON object with a "questions" key containing: question_type, question_text, marks, difficulty, option_a, option_b, option_c, option_d, correct_answer (A/B/C/D), model_answer.'
+        prompt += '\nReturn ONLY a JSON object with a "questions" key.'
         
+        # Call AI with explicit transport and timeout
         response = model.generate_content(
             [prompt, {'mime_type': mime, 'data': data}],
-            request_options={'timeout': 600}
+            request_options={'timeout': 300} # 5 minute timeout is plenty for REST
         )
         
         # Step 3: Save Questions
@@ -159,7 +158,7 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
         try:
             db.connections.close_all()
             ep = ExamPaper.objects.get(id=exam_paper_id)
-            ep.generation_error = str(e)
+            ep.generation_error = f"Error: {str(e)}"
             ep.save()
         except: pass
 
@@ -180,7 +179,7 @@ def generate_paper_from_multiple(paper_ids, instructions, subject, school, teach
             p_data, p_mime, _ = _retrieve_file_data(paper.file)
             if p_data: content.append({'mime_type': p_mime, 'data': p_data})
 
-        response = model.generate_content(content, request_options={'timeout': 600})
+        response = model.generate_content(content, request_options={'timeout': 300})
         data = _extract_json(response.text)
         
         created_count = 0
@@ -223,7 +222,7 @@ def generate_questions_from_instructions(subject, chapters, topics, marks_distri
         if topics: prompt += f"\nFocus: {topics}"
         prompt += '\nReturn ONLY JSON.'
         
-        response = model.generate_content(prompt, request_options={'timeout': 600})
+        response = model.generate_content(prompt, request_options={'timeout': 300})
         data = _extract_json(response.text)
         
         created_count = 0

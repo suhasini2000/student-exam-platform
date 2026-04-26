@@ -86,17 +86,25 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
         if not data:
             raise ValueError(f"Could not read your paper. ({debug_info})")
 
-        # Step 2: AI Generation with Retry Loop
-        api_key = settings.GEMINI_API_KEY
+        # Step 2: AI Generation with Verbose Retry
+        api_key = str(settings.GEMINI_API_KEY).strip() # Ensure no spaces
         genai.configure(api_key=api_key, transport='rest')
         
-        # Globally available models for Free Tier
-        models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+        # Comprehensive list of model IDs to bypass 404s
+        models_to_try = [
+            'gemini-1.5-flash',
+            'gemini-1.5-pro',
+            'gemini-pro',
+            'models/gemini-1.5-flash',
+            'models/gemini-1.5-pro'
+        ]
+        
         response_text = None
+        attempt_errors = []
         
         for model_name in models_to_try:
             try:
-                exam_paper.generation_error = f'[PROGRESS] AI is thinking ({model_name})...'
+                exam_paper.generation_error = f'[PROGRESS] AI is thinking ({model_name.split("/")[-1]})...'
                 exam_paper.save()
                 
                 model = genai.GenerativeModel(model_name)
@@ -108,14 +116,15 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
                     [prompt, {'mime_type': mime, 'data': data}],
                     request_options={'timeout': 300}
                 )
-                response_text = response.text
-                if response_text: break
+                if response and response.text:
+                    response_text = response.text
+                    break
             except Exception as e:
-                logger.warning(f"Model {model_name} failed: {e}")
+                attempt_errors.append(f"{model_name}: {str(e)[:50]}")
                 continue
 
         if not response_text:
-            raise ValueError("All AI models are currently unavailable. Please try again in 5 minutes.")
+            raise ValueError(f"All AI models failed. Details: {' | '.join(attempt_errors)}")
 
         # Step 3: Save Questions
         exam_paper.generation_error = '[PROGRESS] Finalizing questions...'
@@ -123,7 +132,7 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
 
         data = _extract_json(response_text)
         if not data or not data.get('questions'):
-            raise ValueError("The AI could not read the content of this specific file. Try a clearer image.")
+            raise ValueError("The AI succeeded but returned no questions. Try a clearer image.")
 
         created_count = 0
         with transaction.atomic():
@@ -163,8 +172,9 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=20, 
 def generate_paper_from_multiple(paper_ids, instructions, subject, school, teacher, **kwargs):
     try:
         db.connections.close_all()
-        api_key = settings.GEMINI_API_KEY
+        api_key = str(settings.GEMINI_API_KEY).strip()
         genai.configure(api_key=api_key, transport='rest')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         num_mcq, num_short, num_long = kwargs.get('num_mcq', 20), kwargs.get('num_short', 5), kwargs.get('num_long', 4)
         
         prompt = f"Generate {num_mcq} MCQ, {num_short} Short, and {num_long} Long questions for Class 10 {subject.name}."
@@ -177,7 +187,6 @@ def generate_paper_from_multiple(paper_ids, instructions, subject, school, teach
             p_data, p_mime, _ = _retrieve_file_data(paper.file)
             if p_data: content.append({'mime_type': p_mime, 'data': p_data})
 
-        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(content, request_options={'timeout': 300})
         data = _extract_json(response.text)
         
@@ -212,8 +221,9 @@ def generate_paper_from_multiple(paper_ids, instructions, subject, school, teach
 def generate_questions_from_instructions(subject, chapters, topics, marks_distribution, total_marks, school, teacher):
     try:
         db.connections.close_all()
-        api_key = settings.GEMINI_API_KEY
+        api_key = str(settings.GEMINI_API_KEY).strip()
         genai.configure(api_key=api_key, transport='rest')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         num_mcq, num_short, num_long = marks_distribution.get('num_mcq', 20), marks_distribution.get('num_short', 5), marks_distribution.get('num_long', 4)
         
         prompt = f"Generate {num_mcq} MCQ, {num_short} Short, and {num_long} Long questions for Class 10 {subject.name}."
@@ -221,7 +231,6 @@ def generate_questions_from_instructions(subject, chapters, topics, marks_distri
         if topics: prompt += f"\nFocus: {topics}"
         prompt += '\nReturn ONLY JSON.'
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt, request_options={'timeout': 300})
         data = _extract_json(response.text)
         

@@ -85,21 +85,15 @@ def generate_questions_from_paper(exam_paper_id, instructions=None, num_mcq=5, n
         exam_paper.generation_error = '[PROGRESS] Reading your paper...'
         exam_paper.save()
 
+        # Use extracted text if available, otherwise generate from subject only.
+        # NOTE: Direct PDF download is skipped — it hangs indefinitely on Render free tier
+        # due to TCP/DNS-level blocking that Python timeouts cannot catch.
         content = None
-
         if exam_paper.extracted_text:
-            print("DEBUG: [GEN] Using already extracted text.")
+            print("DEBUG: [GEN] Using pre-extracted text.")
             content = f"Context from uploaded paper: {exam_paper.extracted_text[:15000]}"
         else:
-            try:
-                data, mime, debug_info = _retrieve_file_data(exam_paper.file)
-                if data:
-                    print(f"DEBUG: [GEN] File downloaded successfully ({len(data)} bytes).")
-                    content = [{'mime_type': mime, 'data': data}]
-                else:
-                    print(f"DEBUG: [GEN] File download returned no data ({debug_info}), falling back to subject-only generation.")
-            except Exception as file_err:
-                print(f"DEBUG: [GEN] File retrieval failed: {file_err}. Falling back to subject-only generation.")
+            print("DEBUG: [GEN] No extracted text — generating from subject name only.")
 
         # Step 2: AI Generation
         print("DEBUG: [GEN] Moving to AI thinking phase...")

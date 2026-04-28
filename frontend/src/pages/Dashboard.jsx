@@ -151,19 +151,20 @@ export default function Dashboard() {
         }} />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            <div className="flex items-center gap-5">
+          <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">Student Portal</p>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
               {user?.profile_photo ? (
                 <img src={user.profile_photo} alt="Profile"
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-white/30 shadow-xl shrink-0" />
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shadow-xl shrink-0" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-3xl font-black text-white shrink-0 shadow-xl">
+                <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0 shadow-xl">
                   {initials}
                 </div>
               )}
               <div>
-                <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">Student Portal</p>
-                <h1 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
                   Welcome back, {userName}!
                 </h1>
                 <p className="text-white/50 text-sm mt-1">
@@ -193,6 +194,22 @@ export default function Dashboard() {
                 Profile
               </Link>
             </div>
+          </div>
+
+          {/* Stats row — matches height of other page banners */}
+          <div className="flex flex-wrap gap-3">
+            {[
+              { label: 'Exams Taken',     value: recentExams.length,  color: 'bg-white/10 border-white/20',             text: 'text-white'       },
+              { label: 'Assigned',         value: assignedExams.length, color: 'bg-violet-500/30 border-violet-400/40',  text: 'text-violet-200'  },
+              { label: 'Avg Score',        value: recentExams.length
+                  ? `${Math.round(recentExams.reduce((s, e) => s + (e.percentage || 0), 0) / recentExams.length)}%`
+                  : '—',                                                color: 'bg-emerald-500/20 border-emerald-400/30', text: 'text-emerald-200' },
+            ].map(({ label, value, color, text }) => (
+              <div key={label} className={`${color} border rounded-xl px-4 py-2.5 text-center backdrop-blur-sm min-w-[80px]`}>
+                <p className={`text-xl font-extrabold ${text}`}>{value}</p>
+                <p className="text-white/50 text-xs">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

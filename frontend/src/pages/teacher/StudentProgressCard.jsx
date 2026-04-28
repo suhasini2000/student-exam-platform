@@ -420,7 +420,7 @@ export default function StudentProgressCard() {
                       <td className="px-5 py-4"><PctBar pct={row.pct} /></td>
                       <td className="px-5 py-4 text-center">
                         <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-lg border ${grade.cls}`}>
-                          {grade.label}
+                          Grade {grade.label}
                         </span>
                       </td>
                     </tr>
@@ -438,7 +438,7 @@ export default function StudentProgressCard() {
                   <td className="px-5 py-4"><PctBar pct={grandPct} /></td>
                   <td className="px-5 py-4 text-center">
                     <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-lg border ${grandGrade.cls}`}>
-                      {grandGrade.label}
+                      Grade {grandGrade.label}
                     </span>
                   </td>
                 </tr>

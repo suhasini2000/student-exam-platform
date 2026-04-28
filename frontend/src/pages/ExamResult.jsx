@@ -206,6 +206,7 @@ export default function ExamResult() {
                 <div className={`w-20 h-20 rounded-2xl ${gradeInfo.bg} border-2 ${gradeInfo.border} flex items-center justify-center`}>
                   <span className={`text-3xl font-black ${gradeInfo.color}`}>{gradeInfo.grade}</span>
                 </div>
+                <p className={`text-sm font-semibold mt-2 ${gradeInfo.color}`}>Grade</p>
               </div>
             </div>
           )}

@@ -160,7 +160,7 @@ export default function CreatedExams() {
 
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {exams.map((exam, idx) => {
                 const allDone    = exam.completed_count === exam.student_count && exam.student_count > 0;
                 const progress   = exam.student_count > 0 ? Math.round((exam.completed_count / exam.student_count) * 100) : 0;

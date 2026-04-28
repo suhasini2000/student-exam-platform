@@ -171,7 +171,7 @@ export default function ExamHistory() {
                   const isHw  = exam._type === 'handwritten';
                   const pct   = Math.round(exam.percentage || 0);
                   const grade = gradeBadge(pct);
-                  const linkTo = isHw ? '/handwritten-results' : `/result/${exam.id}`;
+                  const linkTo = isHw ? `/handwritten-result/${exam.id}` : `/result/${exam.id}`;
                   const dateStr = new Date(exam._date).toLocaleDateString('en-IN', {
                     day: 'numeric', month: 'short', year: 'numeric',
                     hour: '2-digit', minute: '2-digit',
@@ -234,7 +234,7 @@ export default function ExamHistory() {
                                     : `${exam.score ?? '—'}/50`}
                                 </p>
                                 <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-lg border ${grade.cls}`}>
-                                  {grade.label}
+                                  Grade {grade.label}
                                 </span>
                               </div>
 

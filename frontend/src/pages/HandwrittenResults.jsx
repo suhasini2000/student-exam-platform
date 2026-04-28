@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -59,9 +60,11 @@ function getMarkColor(awarded, max) {
 }
 
 export default function HandwrittenResults() {
+  const [searchParams] = useSearchParams();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
+  const cardRefs = useRef({});
 
   useEffect(() => {
     api.get('/api/handwritten/my/')
@@ -69,6 +72,16 @@ export default function HandwrittenResults() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const expandId = Number(searchParams.get('expand'));
+    if (expandId && !loading) {
+      setExpanded(expandId);
+      setTimeout(() => {
+        cardRefs.current[expandId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+    }
+  }, [loading, searchParams]);
 
   const gradedExams = exams.filter(e => e.obtained_marks != null);
   const avgPct = gradedExams.length
@@ -100,7 +113,7 @@ export default function HandwrittenResults() {
         <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-violet-600/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-60 h-60 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-4xl mx-auto px-4 py-10">
+        <div className="relative max-w-7xl mx-auto px-4 py-10">
           <p className="text-indigo-300 text-xs font-bold uppercase tracking-widest mb-1">My Results</p>
           <h1 className="text-3xl font-extrabold text-white mb-1">Handwritten Results</h1>
           <p className="text-indigo-200 text-sm mb-6">AI-graded handwritten answer sheets</p>
@@ -121,7 +134,7 @@ export default function HandwrittenResults() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {exams.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-violet-100 to-purple-100 rounded-2xl
@@ -137,70 +150,98 @@ export default function HandwrittenResults() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {exams.map((exam) => {
-              const pct       = Math.round(exam.percentage || 0);
-              const grade     = gradeBadge(pct);
+              const pct        = Math.round(exam.percentage || 0);
+              const grade      = gradeBadge(pct);
               const isExpanded = expanded === exam.id;
-              const grading   = exam.grading_data || {};
-              const pieColor  = pct >= 60 ? '#4f46e5' : pct >= 40 ? '#f59e0b' : '#ef4444';
+              const grading    = exam.grading_data || {};
+              const pieColor   = pct >= 60 ? '#4f46e5' : pct >= 40 ? '#f59e0b' : '#ef4444';
+              const stripCls   = pct >= 75 ? 'bg-gradient-to-b from-emerald-400 to-emerald-600'
+                               : pct >= 60 ? 'bg-gradient-to-b from-blue-400 to-blue-600'
+                               : pct >= 40 ? 'bg-gradient-to-b from-yellow-400 to-amber-500'
+                               : 'bg-gradient-to-b from-red-400 to-red-600';
+              const isGraded   = exam.obtained_marks != null;
+
+              const CardWrapper = isGraded ? Link : 'div';
+              const cardProps = isGraded
+                ? { to: `/handwritten-result/${exam.id}` }
+                : { onClick: () => setExpanded(isExpanded ? null : exam.id) };
 
               return (
                 <div key={exam.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  ref={el => { cardRefs.current[exam.id] = el; }}
+                  className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all ${
+                    isExpanded ? 'border-indigo-300 ring-2 ring-indigo-100 lg:col-span-2' : 'border-gray-100'
+                  }`}>
 
                   {/* ── Card Header ── */}
-                  <div
-                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50/60 transition"
-                    onClick={() => setExpanded(isExpanded ? null : exam.id)}
+                  <CardWrapper
+                    {...cardProps}
+                    className="flex cursor-pointer hover:bg-slate-50/60 transition"
                   >
-                    {/* Score ring */}
-                    <div className="shrink-0">
-                      <ScoreRing pct={pct} size={72} />
-                    </div>
+                    {/* Left color strip */}
+                    <div className={`w-1.5 shrink-0 ${stripCls}`} />
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="font-bold text-gray-800 text-base">{exam.title}</h3>
-                        <span className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full
-                                         bg-violet-100 text-violet-700 border border-violet-200">✍️ Handwritten</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <span className="text-xs font-semibold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg border border-indigo-100">
-                          📚 {exam.subject_name}
-                        </span>
-                        {exam.obtained_marks != null && (
-                          <span className="text-xs font-semibold bg-slate-50 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-100">
-                            🏆 {exam.obtained_marks}/{exam.total_marks} marks
-                          </span>
-                        )}
-                        <span className="text-xs font-semibold bg-slate-50 text-slate-500 px-2.5 py-1 rounded-lg border border-slate-100">
-                          📅 {new Date(exam.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                      </div>
+                    <div className="flex-1 px-5 py-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          {/* Title + badge */}
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="font-bold text-gray-800 text-base truncate">{exam.title}</h3>
+                            <span className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 shrink-0">
+                              ✍️ Handwritten
+                            </span>
+                          </div>
 
-                      {/* Score bar */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden max-w-xs">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(pct, 100)}%`,
-                              background: `linear-gradient(to right, ${pieColor}, ${pieColor}cc)`,
-                            }}
-                          />
+                          {/* Subject */}
+                          <p className="text-sm text-gray-500 mb-2">{exam.subject_name}</p>
+
+                          {/* Score bar */}
+                          {isGraded && (
+                            <div className="flex items-center gap-2 max-w-xs">
+                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.min(pct, 100)}%`, background: `linear-gradient(to right, ${pieColor}, ${pieColor}cc)` }} />
+                              </div>
+                              <span className="text-xs font-bold text-gray-600 w-9 text-right">{pct}%</span>
+                            </div>
+                          )}
+
+                          {/* Date */}
+                          <p className="text-xs text-gray-400 mt-2">
+                            📅 {new Date(exam.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
                         </div>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border ${grade.cls}`}>{grade.label}</span>
+
+                        {/* Right: score */}
+                        <div className="flex items-center gap-4 shrink-0">
+                          {isGraded ? (
+                            <div className="text-right">
+                              <p className={`text-3xl font-extrabold ${
+                                pct >= 75 ? 'text-emerald-600' : pct >= 60 ? 'text-blue-600' : pct >= 40 ? 'text-amber-600' : 'text-red-500'
+                              }`}>{pct}%</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{exam.obtained_marks}/{exam.total_marks} marks</p>
+                              <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-lg border ${grade.cls}`}>
+                                Grade {grade.label}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-200">
+                              Pending
+                            </span>
+                          )}
+
+                          <svg className={`w-5 h-5 text-gray-300 transition-transform shrink-0 ${isExpanded ? 'rotate-180 text-indigo-500' : ''}`}
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
+                  </CardWrapper>
 
-                    <svg className={`w-5 h-5 text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-
-                  {/* ── Expanded Panel ── */}
+                  {/* ── Expanded Panel (pending only) ── */}
                   {isExpanded && (
                     <div className="border-t border-gray-100 bg-gradient-to-br from-indigo-50/60 via-violet-50/40 to-slate-50 p-5 space-y-5">
 

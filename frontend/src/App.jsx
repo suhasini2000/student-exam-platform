@@ -17,6 +17,7 @@ import ExamHistory from './pages/ExamHistory';
 import AssignedExams from './pages/AssignedExams';
 import StudentAnalytics from './pages/StudentAnalytics';
 import HandwrittenResults from './pages/HandwrittenResults';
+import HandwrittenResult from './pages/HandwrittenResult';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import UploadPaper from './pages/teacher/UploadPaper';
 import PapersList from './pages/teacher/PapersList';
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/assigned-exams" element={<ProtectedRoute><AssignedExams /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><StudentAnalytics /></ProtectedRoute>} />
             <Route path="/handwritten-results" element={<ProtectedRoute><HandwrittenResults /></ProtectedRoute>} />
+            <Route path="/handwritten-result/:id" element={<ProtectedRoute><HandwrittenResult /></ProtectedRoute>} />
             <Route path="/progress-card" element={<ProtectedRoute><ProgressCard /></ProtectedRoute>} />
 
             {/* School Routes */}

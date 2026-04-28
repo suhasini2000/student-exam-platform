@@ -65,57 +65,49 @@ export default function TeacherDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-screen bg-slate-50">
 
-        {/* ── HERO ─────────────────────────────────────────── */}
-        <div className="relative overflow-hidden rounded-2xl mb-8
-                        bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-900
-                        shadow-xl">
+      {/* ── HERO BANNER (full-width, flush with navbar) ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-900">
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-indigo-600/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-violet-600/20 blur-3xl" />
 
-          {/* Decorative circles */}
-          <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-indigo-600/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-violet-600/20 blur-3xl" />
-          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/[0.02]" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          <Avatar src={user?.profile_photo} name={user?.first_name || user?.username} size="xl" className="ring-4 ring-white/20 shadow-lg" />
 
-          <div className="relative px-8 py-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            {/* Avatar */}
-            <Avatar src={user?.profile_photo} name={user?.first_name || user?.username} size="xl" className="ring-4 ring-white/20 shadow-lg" />
-
-            {/* Text */}
-            <div className="flex-1 min-w-0">
-              <p className="text-indigo-300 text-sm font-medium mb-1">{greeting()}</p>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
-                {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user?.username}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
-                <span className="inline-flex items-center text-indigo-200 text-sm">
-                  <svg className="w-4 h-4 mr-1.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H5a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  {user?.school_name || 'Organization Admin'}
-                </span>
-                <span className="w-1 h-1 rounded-full bg-indigo-400/50 hidden sm:block" />
-                <span className="text-indigo-300 text-sm font-medium capitalize">
-                  {user?.role} Account
-                </span>
-              </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-indigo-300 text-sm font-medium mb-1">{greeting()}</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user?.username}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
+              <span className="inline-flex items-center text-indigo-200 text-sm">
+                <svg className="w-4 h-4 mr-1.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H5a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                {user?.school_name || 'Organization Admin'}
+              </span>
+              <span className="w-1 h-1 rounded-full bg-indigo-400/50 hidden sm:block" />
+              <span className="text-indigo-300 text-sm font-medium capitalize">{user?.role} Account</span>
             </div>
+          </div>
 
-            {/* Quick Stats Strip */}
-            <div className="hidden lg:flex items-center gap-8 px-8 py-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10">
-              <div className="text-center">
-                <p className="text-white text-xl font-bold">{stats.papers}</p>
-                <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">Papers</p>
-              </div>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className="text-white text-xl font-bold">{stats.pending_grading}</p>
-                <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">To Grade</p>
-              </div>
+          <div className="hidden lg:flex items-center gap-8 px-8 py-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/10">
+            <div className="text-center">
+              <p className="text-white text-xl font-bold">{stats.papers}</p>
+              <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">Papers</p>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <p className="text-white text-xl font-bold">{stats.pending_grading}</p>
+              <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider">To Grade</p>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* ── ACTION GRID ───────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">

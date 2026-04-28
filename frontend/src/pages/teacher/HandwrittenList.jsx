@@ -176,6 +176,42 @@ export default function HandwrittenList() {
     failed:     exams.filter(e => e.status === 'FAILED').length,
   };
 
+  const gradedExams = exams.filter(e => e.status === 'GRADED' && e.obtained_marks != null);
+  const avgPct = gradedExams.length
+    ? Math.round(gradedExams.reduce((s, e) => s + (e.percentage || 0), 0) / gradedExams.length)
+    : 0;
+  const topScore = gradedExams.length
+    ? Math.round(Math.max(...gradedExams.map(e => e.percentage || 0)))
+    : 0;
+  const passCount2 = gradedExams.filter(e => (e.percentage || 0) >= 35).length;
+  const passRate = gradedExams.length ? Math.round((passCount2 / gradedExams.length) * 100) : 0;
+
+  const subjectMap = {};
+  for (const e of gradedExams) {
+    const key = e.subject_name || 'Unknown';
+    if (!subjectMap[key]) subjectMap[key] = { total: 0, count: 0 };
+    subjectMap[key].total += e.percentage || 0;
+    subjectMap[key].count += 1;
+  }
+  const subjectData = Object.entries(subjectMap).map(([name, { total, count }]) => ({
+    name, avg: Math.round(total / count),
+  }));
+
+  const gradeDist = { 'A+': 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
+  for (const e of gradedExams) {
+    const p = e.percentage || 0;
+    if (p >= 90) gradeDist['A+']++;
+    else if (p >= 75) gradeDist['A']++;
+    else if (p >= 60) gradeDist['B']++;
+    else if (p >= 50) gradeDist['C']++;
+    else if (p >= 35) gradeDist['D']++;
+    else gradeDist['F']++;
+  }
+  const gradeDistData = Object.entries(gradeDist)
+    .filter(([, v]) => v > 0)
+    .map(([name, value]) => ({ name, value }));
+  const gradeColors = { 'A+': '#10b981', A: '#22c55e', B: '#3b82f6', C: '#eab308', D: '#f97316', F: '#ef4444' };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -264,8 +300,78 @@ export default function HandwrittenList() {
             </Link>
           </div>
         ) : (
+          <div className="space-y-6">
 
-          /* ── Table ── */
+          {/* ── Analytics Section ── */}
+          {gradedExams.length > 0 && (
+            <div>
+              {/* Stat cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                {[
+                  { label: 'Average Score', value: `${avgPct}%`, sub: 'across all graded', color: 'from-indigo-500 to-violet-600', icon: '📊' },
+                  { label: 'Pass Rate',     value: `${passRate}%`, sub: `${passCount2} of ${gradedExams.length} passed`, color: 'from-emerald-500 to-teal-600', icon: '✅' },
+                  { label: 'Top Score',     value: `${topScore}%`, sub: 'highest percentage', color: 'from-amber-500 to-orange-500', icon: '🏆' },
+                ].map(s => (
+                  <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-xl shrink-0`}>
+                      {s.icon}
+                    </div>
+                    <div>
+                      <p className="text-2xl font-black text-gray-900">{s.value}</p>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{s.label}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{s.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Charts */}
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Grade distribution */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <p className="text-sm font-black text-gray-700 mb-1">Grade Distribution</p>
+                  <p className="text-xs text-gray-400 mb-4">How students are spread across grades</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie data={gradeDistData} cx="50%" cy="50%" innerRadius={50} outerRadius={75}
+                        dataKey="value" startAngle={90} endAngle={-270} label={({ name, value }) => `${name}: ${value}`}
+                        labelLine={false}>
+                        {gradeDistData.map(entry => (
+                          <Cell key={entry.name} fill={gradeColors[entry.name] || '#94a3b8'} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v, n) => [`${v} student${v !== 1 ? 's' : ''}`, `Grade ${n}`]} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} formatter={(v) => `Grade ${v}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Subject-wise average */}
+                {subjectData.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <p className="text-sm font-black text-gray-700 mb-1">Subject-wise Average</p>
+                    <p className="text-xs text-gray-400 mb-4">Average score % per subject</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={subjectData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
+                        <Tooltip formatter={(v) => [`${v}%`, 'Avg Score']} />
+                        <Bar dataKey="avg" name="Avg Score" radius={[6, 6, 0, 0]}>
+                          {subjectData.map((entry) => (
+                            <Cell key={entry.name}
+                              fill={entry.avg >= 60 ? '#4f46e5' : entry.avg >= 35 ? '#f59e0b' : '#ef4444'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Table ── */}
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -679,6 +785,7 @@ export default function HandwrittenList() {
                 </tbody>
               </table>
             </div>
+          </div>
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import base64
 import json
 import logging
 import mimetypes
+import re
 import requests
 
 from django.conf import settings
@@ -21,30 +22,63 @@ _ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
 
 def _detect_mime(url, content_type_header, data):
     """Determine correct MIME type from multiple sources."""
-    # 1. Use response Content-Type header (most reliable for Cloudinary)
     if content_type_header:
         ct = content_type_header.split(';')[0].strip().lower()
         if ct in _ALLOWED_IMAGE_TYPES or ct == 'application/pdf':
             return ct
 
-    # 2. Sniff PDF magic bytes
     if data and data[:4] == b'%PDF':
         return 'application/pdf'
 
-    # 3. Guess from URL path
     mime, _ = mimetypes.guess_type(url)
     if mime in _ALLOWED_IMAGE_TYPES or mime == 'application/pdf':
         return mime
 
-    # 4. Default — treat as PDF (handwritten exams are almost always PDF/image)
     return 'application/pdf'
+
+
+def _download_url(url, timeout=60):
+    """Download bytes from a URL, return (data, mime)."""
+    response = requests.get(url, timeout=timeout, allow_redirects=True)
+    if response.status_code == 200:
+        ct = response.headers.get('Content-Type', '')
+        mime = _detect_mime(url, ct, response.content)
+        return response.content, mime
+    raise ValueError(f"HTTP {response.status_code} fetching file")
+
+
+def _cloudinary_signed_url(cloudinary_url_str):
+    """
+    Generate a signed private-download URL via the Cloudinary SDK.
+    Works regardless of the resource's delivery type (public/authenticated/private).
+    """
+    import cloudinary.utils
+
+    # Parse: https://res.cloudinary.com/{cloud}/{res_type}/upload/{version}/{public_id}
+    match = re.search(r'/(image|raw|video)/upload/(?:v\d+/)?(.+)$', cloudinary_url_str)
+    if not match:
+        raise ValueError(f"Cannot parse Cloudinary URL: {cloudinary_url_str}")
+
+    resource_type = match.group(1)
+    public_id = match.group(2)
+
+    # private_download_url generates a time-limited API-signed URL — always accessible
+    signed = cloudinary.utils.private_download_url(
+        public_id,
+        format='',           # keep original format
+        resource_type=resource_type,
+        type='upload',
+        expires_at=None,     # SDK default (~1 hour)
+        attachment=False,
+    )
+    return signed
 
 
 def _encode_file(file_field):
     """Read a file and return (raw_bytes, media_type)."""
     url = file_field.url
 
-    # 1. Native Django file open (local storage)
+    # 1. Local filesystem open (dev / non-Cloudinary)
     try:
         file_field.open('rb')
         data = file_field.read()
@@ -56,27 +90,25 @@ def _encode_file(file_field):
     except Exception as e:
         logger.warning(f"Native open failed: {e}")
 
-    # 2. HTTP download (Cloudinary)
-    if url.startswith('http'):
-        try:
-            response = requests.get(url, timeout=60, allow_redirects=True)
-            if response.status_code == 200:
-                ct = response.headers.get('Content-Type', '')
-                mime = _detect_mime(url, ct, response.content)
-                logger.info(f"Downloaded from {url}, mime={mime}")
-                return response.content, mime
-            elif response.status_code == 401:
-                raise ValueError("File access denied (401). Check Cloudinary permissions.")
-            else:
-                raise ValueError(f"Could not fetch file (HTTP {response.status_code})")
-        except requests.exceptions.Timeout:
-            raise ValueError("File download timeout. The file may be too large.")
-        except ValueError:
-            raise
-        except requests.exceptions.RequestException as e:
-            raise ValueError(f"Network error: {str(e)}")
+    if not url.startswith('http'):
+        raise ValueError(f"Could not read file at {url}")
 
-    raise ValueError(f"Could not read document at {url}")
+    # 2. Cloudinary signed download (handles 401 authenticated resources)
+    try:
+        signed = _cloudinary_signed_url(url)
+        data, mime = _download_url(signed)
+        logger.info(f"Downloaded via Cloudinary signed URL, mime={mime}")
+        return data, mime
+    except Exception as e:
+        logger.warning(f"Cloudinary signed download failed: {e}")
+
+    # 3. Plain public URL as last resort
+    try:
+        data, mime = _download_url(url)
+        logger.info(f"Downloaded via public URL, mime={mime}")
+        return data, mime
+    except Exception as e:
+        raise ValueError(f"Could not download file: {e}")
 
 
 def _build_content_block(data, media_type):

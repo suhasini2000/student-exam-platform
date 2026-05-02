@@ -2144,8 +2144,6 @@ class ProgressCardView(generics.GenericAPIView):
             user=student,
             status='COMPLETED',
             assigned_exam__isnull=False,
-        ).exclude(
-            assigned_exam__exam_category='',
         ).select_related('subject', 'assigned_exam', 'subject__exam_type')
 
         if exam_category:
@@ -2163,8 +2161,8 @@ class ProgressCardView(generics.GenericAPIView):
                 'subject_id': ue.subject_id,
                 'subject_name': ue.subject.name,
                 'exam_type_name': ue.subject.exam_type.name if ue.subject.exam_type_id else '',
-                'exam_category': ue.assigned_exam.exam_category,
-                'exam_category_display': ue.assigned_exam.get_exam_category_display(),
+                'exam_category': ue.assigned_exam.exam_category or 'general',
+                'exam_category_display': ue.assigned_exam.get_exam_category_display() or 'General',
                 'title': ue.assigned_exam.title,
                 'score': ue.score,
                 'total_marks': ue.assigned_exam.total_marks,

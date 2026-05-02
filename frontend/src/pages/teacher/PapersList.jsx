@@ -156,7 +156,7 @@ export default function PapersList() {
               Select All
             </label>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {papers.map((paper) => (
                 <div key={paper.id} className={`bg-white rounded-2xl shadow-sm border-2 transition-all overflow-hidden ${selectedPapers.includes(paper.id) ? 'border-indigo-400' : 'border-gray-100'}`}>
                   <div className="p-5">

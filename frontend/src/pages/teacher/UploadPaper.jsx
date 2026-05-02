@@ -12,9 +12,19 @@ export default function UploadPaper() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [stats, setStats] = useState({ total: 0, generated: 0, subjects: 0 });
 
   useEffect(() => {
     api.get('/api/subjects/').then(res => setSubjects(res.data.results || res.data)).catch(console.error);
+    api.get('/api/exams/papers/').then(res => {
+      const papers = res.data.results || res.data || [];
+      const subjectSet = new Set(papers.map(p => p.subject));
+      setStats({
+        total: papers.length,
+        generated: papers.filter(p => p.questions_generated).length,
+        subjects: subjectSet.size,
+      });
+    }).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -72,12 +82,16 @@ export default function UploadPaper() {
           <p className="text-indigo-200 text-sm mb-6">Upload a PDF question paper for use in your exams</p>
           <div className="flex flex-wrap gap-3">
             <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-center backdrop-blur-sm min-w-[80px]">
-              <p className="text-xl font-extrabold text-white">PDF</p>
-              <p className="text-white/50 text-xs">Format</p>
+              <p className="text-xl font-extrabold text-white">{stats.total}</p>
+              <p className="text-white/50 text-xs">Total Papers</p>
+            </div>
+            <div className="bg-emerald-500/20 border border-emerald-400/30 rounded-xl px-4 py-2.5 text-center backdrop-blur-sm min-w-[80px]">
+              <p className="text-xl font-extrabold text-emerald-200">{stats.generated}</p>
+              <p className="text-white/50 text-xs">Generated</p>
             </div>
             <div className="bg-indigo-500/30 border border-indigo-400/40 rounded-xl px-4 py-2.5 text-center backdrop-blur-sm min-w-[80px]">
-              <p className="text-xl font-extrabold text-indigo-200">MCQ</p>
-              <p className="text-white/50 text-xs">Question Type</p>
+              <p className="text-xl font-extrabold text-indigo-200">{stats.subjects}</p>
+              <p className="text-white/50 text-xs">Subjects</p>
             </div>
           </div>
         </div>

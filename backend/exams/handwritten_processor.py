@@ -16,44 +16,64 @@ from .models import HandwrittenExam
 logger = logging.getLogger(__name__)
 
 
+_ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+
+
+def _detect_mime(url, content_type_header, data):
+    """Determine correct MIME type from multiple sources."""
+    # 1. Use response Content-Type header (most reliable for Cloudinary)
+    if content_type_header:
+        ct = content_type_header.split(';')[0].strip().lower()
+        if ct in _ALLOWED_IMAGE_TYPES or ct == 'application/pdf':
+            return ct
+
+    # 2. Sniff PDF magic bytes
+    if data and data[:4] == b'%PDF':
+        return 'application/pdf'
+
+    # 3. Guess from URL path
+    mime, _ = mimetypes.guess_type(url)
+    if mime in _ALLOWED_IMAGE_TYPES or mime == 'application/pdf':
+        return mime
+
+    # 4. Default — treat as PDF (handwritten exams are almost always PDF/image)
+    return 'application/pdf'
+
+
 def _encode_file(file_field):
     """Read a file and return (raw_bytes, media_type)."""
     url = file_field.url
-    mime, _ = mimetypes.guess_type(url)
-    if not mime:
-        mime = 'application/octet-stream'
 
-    data = None
-
-    # 1. Native Django file open (for local storage)
+    # 1. Native Django file open (local storage)
     try:
         file_field.open('rb')
         data = file_field.read()
         file_field.close()
         if data:
-            logger.info(f"Successfully opened file locally")
+            mime = _detect_mime(url, None, data)
+            logger.info(f"Opened file locally, mime={mime}")
             return data, mime
     except Exception as e:
         logger.warning(f"Native open failed: {e}")
 
-    # 2. Simple HTTP request (Cloudinary public URLs)
+    # 2. HTTP download (Cloudinary)
     if url.startswith('http'):
         try:
-            response = requests.get(url, timeout=30, allow_redirects=True)
+            response = requests.get(url, timeout=60, allow_redirects=True)
             if response.status_code == 200:
-                logger.info(f"Successfully downloaded file from {url}")
+                ct = response.headers.get('Content-Type', '')
+                mime = _detect_mime(url, ct, response.content)
+                logger.info(f"Downloaded from {url}, mime={mime}")
                 return response.content, mime
             elif response.status_code == 401:
-                logger.error(f"HTTP 401: File access denied at {url}")
-                raise ValueError("File access denied. Check Cloudinary permissions.")
+                raise ValueError("File access denied (401). Check Cloudinary permissions.")
             else:
-                logger.error(f"HTTP {response.status_code} fetching {url}")
                 raise ValueError(f"Could not fetch file (HTTP {response.status_code})")
         except requests.exceptions.Timeout:
-            logger.error(f"Request timeout while fetching {url}")
-            raise ValueError("Request timeout. Check internet connection.")
+            raise ValueError("File download timeout. The file may be too large.")
+        except ValueError:
+            raise
         except requests.exceptions.RequestException as e:
-            logger.error(f"Network error: {e}")
             raise ValueError(f"Network error: {str(e)}")
 
     raise ValueError(f"Could not read document at {url}")
@@ -71,15 +91,16 @@ def _build_content_block(data, media_type):
                 "data": b64,
             }
         }
-    else:
-        return {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": media_type,
-                "data": b64,
-            }
+    # Claude only accepts these image types
+    image_type = media_type if media_type in _ALLOWED_IMAGE_TYPES else 'image/jpeg'
+    return {
+        "type": "image",
+        "source": {
+            "type": "base64",
+            "media_type": image_type,
+            "data": b64,
         }
+    }
 
 
 def process_handwritten_exam(handwritten_exam_id, include_analysis=False):

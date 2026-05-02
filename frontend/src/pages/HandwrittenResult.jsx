@@ -45,15 +45,8 @@ export default function HandwrittenResult() {
   useEffect(() => {
     const load = async () => {
       try {
-        // Try student's own list and find by id
-        const res = await api.get('/api/handwritten/my/');
-        const list = res.data.results || res.data;
-        const found = list.find(e => String(e.id) === String(id));
-        if (found) {
-          setExam(found);
-        } else {
-          setNotFound(true);
-        }
+        const res = await api.get(`/api/handwritten/${id}/`);
+        setExam(res.data);
       } catch {
         setNotFound(true);
       } finally {
